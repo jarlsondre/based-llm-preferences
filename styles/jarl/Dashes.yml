@@ -1,0 +1,9 @@
+extends: existence
+message: "em-dash or substitute (language.md): use a comma, colon, parentheses, or two sentences"
+level: error
+nonword: true
+tokens:
+  - '—'
+  - ' – '
+  - '[A-Za-z]--[A-Za-z]'
+  - ' -- '

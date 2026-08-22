@@ -1,0 +1,11 @@
+extends: existence
+message: "filler (language.md): delete it or say the thing directly"
+level: error
+ignorecase: true
+tokens:
+  - it should be noted
+  - it is important to note
+  - great question
+  - in conclusion
+  - furthermore
+  - in light of the aforementioned

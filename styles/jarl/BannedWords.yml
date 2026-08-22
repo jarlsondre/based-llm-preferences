@@ -1,0 +1,24 @@
+extends: substitution
+message: "banned word (language.md): write '%s', not '%s'"
+level: error
+ignorecase: true
+swap:
+  organism: the model itself, named
+  treatment arm: what was picked, named
+  control arm: the comparison rows
+  lever: the actual mechanism or intervention, named
+  delv(?:e|es|ed|ing): look into
+  utiliz(?:e|es|ed|ing|ation): use
+  leverag(?:e|es|ed|ing): use
+  ascertain(?:s|ed|ing)?: find out
+  facilitat(?:e|es|ed|ing|ion): "say what it does: help, enable, make possible"
+  powerful: say what it does
+  blazing(?:ly)? fast: say how fast
+  crucial: important, or say why it matters
+  pivotal: important, or say why it matters
+  robust: say what it handles
+  seamless: say what it handles
+  comprehensive: say what it covers
+  landscape: name the thing
+  journey: name the thing
+  deep dive: name the analysis

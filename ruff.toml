@@ -1,0 +1,43 @@
+line-length = 120
+target-version = "py311"
+# Migrations are generated code: not linted or formatted here.
+extend-exclude = ["**/migrations"]
+
+[lint]
+select = [
+  "E",   # pycodestyle errors
+  "F",   # pyflakes: undefined names, unused imports, etc.
+  "I",   # isort: import sorting
+  "W",   # pycodestyle warnings
+  "B",   # flake8-bugbear: likely bugs and bad practices (e.g. mutable defaults)
+  "C4",  # flake8-comprehensions: unnecessary or suboptimal comprehensions
+  "SIM", # flake8-simplify: redundant ifs, returns, boolean logic
+  "UP",  # pyupgrade: use modern Python syntax (e.g. f-strings, `Path()` literals)
+  "PTH", # flake8-use-pathlib: use pathlib instead of os.path
+  "N",   # pep8-naming: naming conventions for classes, functions, variables
+  "ANN", # flake8-annotations: require type annotations on functions
+]
+ignore = [
+  "E203",   # Whitespace before ':': conflicts with the formatter
+  "PTH109", # Allow os.getcwd()
+  "PTH122", # Avoid replacing os.path.splitext: Path.suffix drops info (e.g. .tar.gz)
+  "PTH123", # Allow use of builtin open(): Path.open() adds no real benefit
+  "UP006",  # Keep using typing.List/Dict/Set: prefer consistency over builtin generics
+  "UP035",  # Same as above: avoid auto-converting to list[]/dict[] syntax
+  "B904",   # Don't require `from err` in CLI code: breaks Typer/Click behavior
+  "SIM108", # Don't always use ternary operators: they can be kind of hard to read sometimes
+  "N806",   # Allow UPPER_CASE_VARIABLE_NAMES in function scopes (for default values etc.)
+  "N812",   # Allow importing stuff as uppercase (e.g. function as F)
+  "ANN401", # Allow `Any` in annotations: needed at framework boundaries (request data, kwargs)
+]
+fixable = ["ALL"]
+
+[lint.per-file-ignores]
+# Tests don't need full annotation coverage.
+"**/tests.py" = ["ANN"]
+
+[format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
