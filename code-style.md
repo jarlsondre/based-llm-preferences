@@ -6,6 +6,11 @@ Rules for writing code.
 
 ## 1. Any language
 
+- Before writing code, check in order: (1) does this need to exist at all, (2)
+  does the codebase already have it, (3) does the stdlib have it, (4) does the
+  platform have it, (5) does an installed dependency have it. Only then write
+  it, minimally. Check after understanding the problem, not instead of it.
+  (Distilled from ponytail.)
 - After editing code, run the project's formatter, linter, and type checker.
   Work is not done while any of them complains.
 - No new dependencies without asking jarl first.

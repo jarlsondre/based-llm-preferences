@@ -26,11 +26,11 @@ Merge into `.claude/settings.json`:
         "hooks": [
           {
             "type": "command",
-            "command": "cmd=$(jq -r '.tool_input.command // empty'); if printf '%s' \"$cmd\" | grep -qwE 'sbatch|srun|salloc'; then printf '%s' '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"ask\",\"permissionDecisionReason\":\"cluster.md rule 1: job submission needs jarl approval\"}}'; fi"
+            "command": "command -v jq >/dev/null || { echo 'hook: jq missing; install a static jq binary into ~/.local/bin (no sudo needed)' >&2; exit 2; }; cmd=$(jq -r '.tool_input.command // empty'); if printf '%s' \"$cmd\" | grep -qwE 'sbatch|srun|salloc'; then printf '%s' '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"ask\",\"permissionDecisionReason\":\"cluster.md rule 1: job submission needs jarl approval\"}}'; fi"
           },
           {
             "type": "command",
-            "command": "cmd=$(jq -r '.tool_input.command // empty'); if printf '%s' \"$cmd\" | grep -qwE 'gh'; then printf '%s' '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"ask\",\"permissionDecisionReason\":\"workflow.md: gh needs jarl approval\"}}'; fi"
+            "command": "command -v jq >/dev/null || { echo 'hook: jq missing; install a static jq binary into ~/.local/bin (no sudo needed)' >&2; exit 2; }; cmd=$(jq -r '.tool_input.command // empty'); if printf '%s' \"$cmd\" | grep -qwE 'gh'; then printf '%s' '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"ask\",\"permissionDecisionReason\":\"workflow.md: gh needs jarl approval\"}}'; fi"
           }
         ]
       }
@@ -41,7 +41,8 @@ Merge into `.claude/settings.json`:
 
 Notes:
 
-- Requires `jq` on the machine.
+- Missing `jq` blocks the command with an install message instead of silently
+  disabling the guard.
 - The guard matches the words anywhere in the command, so
   `cd work && sbatch job.sh` is caught. Permission prefix rules like
   `Bash(sbatch *)` check only the leading command and miss that form, which is
@@ -71,7 +72,7 @@ Merge into `.claude/settings.json`:
         "hooks": [
           {
             "type": "command",
-            "command": "f=$(jq -r '.tool_input.file_path // empty'); case \"$f\" in *.py) r=$(uvx ruff check --no-cache \"$f\" 2>&1); rok=$?; t=$(uvx ty check \"$f\" 2>&1); tok=$?; if [ \"$rok\" -ne 0 ] || [ \"$tok\" -ne 0 ]; then [ \"$rok\" -ne 0 ] && printf '%s\\n' \"$r\" >&2; [ \"$tok\" -ne 0 ] && printf '%s\\n' \"$t\" >&2; exit 2; fi ;; esac"
+            "command": "command -v jq >/dev/null || { echo 'hook: jq missing; install a static jq binary into ~/.local/bin (no sudo needed)' >&2; exit 2; }; f=$(jq -r '.tool_input.file_path // empty'); case \"$f\" in *.py) r=$(uvx ruff check --no-cache \"$f\" 2>&1); rok=$?; t=$(uvx ty check \"$f\" 2>&1); tok=$?; if [ \"$rok\" -ne 0 ] || [ \"$tok\" -ne 0 ]; then [ \"$rok\" -ne 0 ] && printf '%s\\n' \"$r\" >&2; [ \"$tok\" -ne 0 ] && printf '%s\\n' \"$t\" >&2; exit 2; fi ;; esac"
           }
         ]
       }
@@ -82,7 +83,8 @@ Merge into `.claude/settings.json`:
 
 Notes:
 
-- Requires `jq` and `uv` on the machine.
+- Missing `jq` blocks the edit with an install message; missing `uv` fails
+  loudly through the tool calls themselves.
 - Both tools always run, and only failing output is reported.
 - ruff resolves the nearest config, so the project's own `ruff.toml` applies;
   without one, ruff defaults apply.
@@ -96,8 +98,7 @@ Notes:
 
 Enforces language.md mechanically. After every edit to a `.md` file, Vale runs
 on it using the nearest `.vale.ini` found upward from the file, and findings
-come back as a blocking error. If `vale` or a config is missing, the hook passes
-silently; fix that per language.md's enforcement section.
+come back as a blocking error.
 
 Merge into `.claude/settings.json`:
 
@@ -110,7 +111,7 @@ Merge into `.claude/settings.json`:
         "hooks": [
           {
             "type": "command",
-            "command": "f=$(jq -r '.tool_input.file_path // empty'); case \"$f\" in *.md) command -v vale >/dev/null || exit 0; d=$(cd \"$(dirname \"$f\")\" && pwd); cfg=\"\"; while :; do [ -f \"$d/.vale.ini\" ] && { cfg=\"$d/.vale.ini\"; break; }; [ \"$d\" = \"/\" ] && break; d=$(dirname \"$d\"); done; [ -n \"$cfg\" ] || exit 0; out=$(vale --config \"$cfg\" --output line \"$f\" 2>&1) || { printf '%s\\n' \"$out\" >&2; exit 2; } ;; esac"
+            "command": "command -v jq >/dev/null || { echo 'hook: jq missing; install a static jq binary into ~/.local/bin (no sudo needed)' >&2; exit 2; }; f=$(jq -r '.tool_input.file_path // empty'); case \"$f\" in *.md) d=$(cd \"$(dirname \"$f\")\" && pwd); cfg=\"\"; while :; do { [ -e \"$d/.vale.ini\" ] || [ -L \"$d/.vale.ini\" ]; } && { cfg=\"$d/.vale.ini\"; break; }; [ \"$d\" = \"/\" ] && break; d=$(dirname \"$d\"); done; [ -n \"$cfg\" ] || { echo 'hook: no Vale config found; run setup.md from the preferences repo' >&2; exit 2; }; command -v vale >/dev/null || { echo 'hook: vale missing; install per language.md section 4' >&2; exit 2; }; out=$(vale --config \"$cfg\" --output line \"$f\" 2>&1) || { printf '%s\\n' \"$out\" >&2; exit 2; } ;; esac"
           }
         ]
       }
@@ -121,6 +122,9 @@ Merge into `.claude/settings.json`:
 
 Notes:
 
-- Requires `jq` and the `vale` binary.
 - The Vale style lives in this repo; language.md section 4 says how to get it
   into a project.
+- Every failure is loud and names its fix: missing `jq`, no Vale config, missing
+  `vale`, and a dangling `.vale.ini` symlink all block the edit. Installing this
+  hook is the opt-in; wherever it is installed, every markdown edit is either
+  checked or fails with the fix named.

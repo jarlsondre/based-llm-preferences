@@ -33,3 +33,4 @@ entry point.
 | [ruff.toml](ruff.toml)                     | starting ruff config for Python projects          |
 | [.vale.ini](.vale.ini), [styles/](styles/) | mechanical enforcement of language.md             |
 | [.prettierrc](.prettierrc)                 | markdown prose wrapped at 80 columns              |
+| [setup.md](setup.md)                       | copying these configs into a project              |

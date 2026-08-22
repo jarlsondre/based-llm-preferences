@@ -111,8 +111,9 @@ In any project:
    (clusters have no sudo and no apt), download the release tarball for the
    machine's architecture from Vale's GitHub releases and put the `vale` binary
    somewhere on PATH, such as `~/.local/bin`. No root is needed.
-2. No `.vale.ini` in the project: copy `.vale.ini`, `styles/`, and `.prettierrc`
-   from this repo into the project root.
+2. Before the first vale call, check the project's `.vale.ini`: missing or a
+   dangling symlink means running [setup.md](setup.md) first. Never recreate the
+   files from memory.
 3. After writing markdown: run `vale <file>` and
    `npx --yes prettier --write <file>`; fix every finding before presenting.
 
