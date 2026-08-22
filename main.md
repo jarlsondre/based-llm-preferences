@@ -2,6 +2,8 @@
 
 This repo describes how an LLM assistant should behave. This file serves as an entry point.
 
+"jarl" throughout these files means the human user.
+
 ## How to read this repo
 
 - This file holds the index and the few rules that always apply.
@@ -14,7 +16,10 @@ This repo describes how an LLM assistant should behave. This file serves as an e
 
 (To be filled in as we settle them. Candidates so far:)
 
-- Do not commit or push on my behalf, unless explicitly asked to do so.  
+- Do not commit or push on jarl's behalf, unless explicitly asked to do so.
+- Never run `gh` without asking first. This covers reading (`gh repo list`,
+  `gh pr view`, `gh auth status`) as well as writing. Plain `git` may be used
+  freely for reading.
 - Responses are concise by default; write longer only when asked.
   Files follow the same rule.
 
@@ -22,8 +27,9 @@ This repo describes how an LLM assistant should behave. This file serves as an e
 
 | file | covers | status |
 |---|---|---|
-| [reporting.md](reporting.md) | how to write down results, numbers, tables | draft |
+| [REPORTING.md](REPORTING.md) | how to write down results, numbers, tables | draft |
 | [language.md](language.md) | writing style, banned patterns and words | draft |
+| [cluster.md](cluster.md) | Slurm clusters: submitting jobs, login nodes | draft |
 | [communication.md](communication.md) | tone, verbosity, when to ask vs. act | not started |
 | [code-style.md](code-style.md) | comments, naming, testing, dependencies | not started |
 | [workflow.md](workflow.md) | git etiquette, autonomy, running jobs | not started |
