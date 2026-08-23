@@ -128,3 +128,38 @@ Notes:
   `vale`, and a dangling `.vale.ini` symlink all block the edit. Installing this
   hook is the opt-in; wherever it is installed, every markdown edit is either
   checked or fails with the fix named.
+
+---
+
+## 4. Reporting guard: no stopping with unwritten results
+
+Enforces reporting.md rule 11. When the agent tries to end its turn, the hook
+blocks it once with a reminder to write any results produced this session to the
+report or its inbox. The second stop goes through (`stop_hook_active` guards the
+loop), so the cost is one bounce per turn-end. Install in projects that produce
+results.
+
+Merge into `.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v jq >/dev/null || { echo 'hook: jq missing; install a static jq binary into ~/.local/bin (no sudo needed)' >&2; exit 2; }; a=$(jq -r '.stop_hook_active // false'); [ \"$a\" = \"true\" ] && exit 0; printf '%s' '{\"decision\":\"block\",\"reason\":\"reporting.md rule 11: if this session produced results not yet written to the report or its inbox, write them now, then stop.\"}'"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+Notes:
+
+- The bounce fires whether or not results were produced; the agent judges. If
+  the noise proves annoying, the refinement is grepping the transcript (the hook
+  receives its path) for result-producing markers before bouncing.

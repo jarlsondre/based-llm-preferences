@@ -87,6 +87,7 @@ clinical treatment, an actual organism).
 | organism             | the model itself, named: "the bad-medical model" |
 | treatment (arm)      | what was picked, named: "top 6,000 by score"     |
 | control (arm)        | the comparison rows                              |
+| arm, arms            | name the group: which runs, which selection      |
 | lever                | the actual mechanism or intervention, named      |
 | delve                | look into, examine                               |
 | leverage (as a verb) | use                                              |

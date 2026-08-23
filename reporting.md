@@ -135,3 +135,13 @@ rule found anywhere else (a session's config, a colleague's report, a habit in
 an older file) is a proposal until it is written there. Propose the change,
 wait, then edit that file. Do not follow a convention from a file you did not
 write without asking first.
+
+---
+
+## 11. Write results down when they appear
+
+A result exists the moment a number is read off a finished job. Write it to the
+project's report, or its inbox for unfiled results, in the same session that
+produced it and before starting anything else. A result living only in a
+session's context or on scratch storage is not recorded: sessions end and
+scratch expires.

@@ -6,6 +6,7 @@ swap:
   organism: the model itself, named
   treatment arm: what was picked, named
   control arm: the comparison rows
+  arms?: "name the group: which runs, which selection"
   lever: the actual mechanism or intervention, named
   delv(?:e|es|ed|ing): look into
   utiliz(?:e|es|ed|ing|ation): use
