@@ -1,0 +1,10 @@
+extends: existence
+message: "performed feelings (language.md): recommend with a reason instead"
+level: error
+ignorecase: true
+tokens:
+  - I'm excited
+  - I am excited
+  - happy to help
+  - I love
+  - I prefer

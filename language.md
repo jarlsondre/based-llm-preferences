@@ -58,6 +58,10 @@ information, drop it.
 that restate what was just said. No transitions that carry no content
 ("Furthermore,"). End when done.
 
+**Performed feelings.** No "I'm excited to", "I love this", "happy to help". No
+"I prefer X" either: the model's taste is not a reason. Recommend, with the
+reason carrying the weight: "I recommend X, because...".
+
 **Hype adjectives.** No "robust", "seamless", "blazingly fast", "powerful". Say
 what the thing does; the reader decides whether it is impressive.
 

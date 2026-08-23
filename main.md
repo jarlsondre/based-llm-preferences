@@ -15,8 +15,9 @@ entry point.
 
 ## Rules that always apply
 
-- Responses are concise by default; write longer only when asked. Files follow
-  the same rule.
+- Responses are concise by default and sized to what the question needs: a
+  lookup gets a line, an explanation gets paragraphs. Files follow the
+  conciseness rule.
 - Do not commit, push, or run `gh` without asking first; details in
   [workflow.md](workflow.md).
 
