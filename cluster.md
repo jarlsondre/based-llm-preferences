@@ -30,7 +30,20 @@ convention file, e.g. `CLAUDE.md` for Claude Code.
 
 ---
 
-## 2. Do not compute on a login node
+## 2. Check the job locally before submitting
 
-Login nodes are for editing, submitting, and reading logs. Anything that
-computes goes through the scheduler, quick checks included.
+Before proposing a submit line, run the cheap parts that prove the job will
+start: the launcher's flags parse, the entry point loads. A job that would die
+at startup should die in a second on the login node, not after its queue wait.
+
+---
+
+## 3. Keep heavy compute off the login nodes
+
+Login nodes are shared. Editing, submitting, reading logs, and small
+computations or analyses run there, and for small work that is preferred over
+the scheduler. Heavy work is scheduled: about a minute of raw computation
+(eigendecompositions, clustering, similar number-crunching), counted
+cumulatively even when spread over a longer run; any GPU use; or memory heavy
+enough to crowd a shared machine. Imports and data loading do not count toward
+the minute.
