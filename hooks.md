@@ -149,7 +149,7 @@ Merge into `.claude/settings.json`:
         "hooks": [
           {
             "type": "command",
-            "command": "command -v jq >/dev/null || { echo 'hook: jq missing; install a static jq binary into ~/.local/bin (no sudo needed)' >&2; exit 2; }; a=$(jq -r '.stop_hook_active // false'); [ \"$a\" = \"true\" ] && exit 0; printf '%s' '{\"decision\":\"block\",\"reason\":\"reporting.md rule 11: if this session produced results not yet written to the report or its inbox, write them now, then stop.\"}'"
+            "command": "command -v jq >/dev/null || { echo 'hook: jq missing; install a static jq binary into ~/.local/bin (no sudo needed)' >&2; exit 2; }; a=$(jq -r '.stop_hook_active // false'); [ \"$a\" = \"true\" ] && exit 0; printf '%s' '{\"decision\":\"block\",\"reason\":\"reporting.md rule 11: if this session produced results not yet written to the report or its inbox, write them now, then stop. If nothing is unwritten, reply with exactly: nothing to report.\"}'"
           }
         ]
       }
@@ -163,3 +163,46 @@ Notes:
 - The bounce fires whether or not results were produced; the agent judges. If
   the noise proves annoying, the refinement is grepping the transcript (the hook
   receives its path) for result-producing markers before bouncing.
+
+---
+
+## 5. Secrets guard: no reading secret files
+
+Enforces the secrets rule in workflow.md. Any Bash command, Read, or Grep whose
+input touches a secret-holding file (`.env` and `.envrc` files, `.secrets*`, ssh
+private keys, cloud credentials) is denied outright: there is no approval case,
+because the harm is the value entering context at all.
+
+Merge into `.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Read|Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v jq >/dev/null || { echo 'hook: jq missing; install a static jq binary into ~/.local/bin (no sudo needed)' >&2; exit 2; }; t=$(jq -r '.tool_input | tostring'); if printf '%s' \"$t\" | grep -qE '\\.env(rc)?([^A-Za-z0-9]|$)|\\.secrets|id_rsa|id_ed25519|id_ecdsa|\\.aws/credentials'; then echo 'secrets guard (workflow.md): do not open secret files; check presence without the value: grep -q NAME file, or printenv NAME >/dev/null' >&2; exit 2; fi; if printf '%s' \"$t\" | grep -qE '(API_KEY|_TOKEN|_SECRET|PASSWORD)([^A-Z0-9]|$)' && ! printf '%s' \"$t\" | grep -q '>/dev/null' && ! printf '%s' \"$t\" | grep -q 'grep -q'; then echo 'secrets guard (workflow.md): command references a secret-named variable; never print secret values. Presence checks: printenv NAME >/dev/null, or grep -q NAME file' >&2; exit 2; fi"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+Notes:
+
+- A guardrail against the accidental case, not a sandbox: a creative enough
+  command can evade word matching, and a bare `env` dump names nothing. The
+  companion fix is keeping secrets out of agent shells entirely: the shell rc
+  sources `~/.secrets.env` only when `CLAUDECODE` is unset.
+- The second check blocks commands referencing secret-shaped variable names
+  (`API_KEY`, `_TOKEN`, `_SECRET`, `PASSWORD`, uppercase, suffix-bounded, so
+  `MAX_TOKENS` and `--max-tokens` pass). The presence idioms (`>/dev/null`,
+  `grep -q`) are the two escapes.
+- The pattern matches the whole tool input, so a Grep into a secret file is
+  caught by its path, and a false positive costs one blocked call with the safe
+  alternative named.

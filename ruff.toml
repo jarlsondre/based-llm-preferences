@@ -16,6 +16,23 @@ select = [
   "PTH", # flake8-use-pathlib: use pathlib instead of os.path
   "N",   # pep8-naming: naming conventions for classes, functions, variables
   "ANN", # flake8-annotations: require type annotations on functions
+  "RET", # flake8-return: no else after return, clean return handling
+  "PERF", # perflint: comprehensions and C-level calls over manual loops
+  "FURB", # refurb: use the stdlib idiom
+  "PLE", # pylint errors: real mistakes, near-zero noise
+  "PLW1510", # subprocess.run without explicit check= fails silently
+  "PLW2901", # loop variable overwritten inside the loop body
+  "PLR1714", # merge repeated comparisons: x == 1 or x == 2 -> x in {1, 2}
+  "PLC0414", # useless import alias
+  "BLE", # no blind except Exception: failures stay loud
+  "S110", # no try-except-pass
+  "S112", # no try-except-continue
+  "ERA", # no commented-out code
+  "ARG", # no unused function arguments (prefix with _ when required by an interface)
+  "RUF", # ruff's own rules, including RUF100: no stale noqa comments
+  "NPY", # numpy modernization, e.g. Generator API over np.random.seed
+  "PD", # pandas-vet, e.g. no inplace=True
+  "FIX", # no TODO/FIXME/HACK left in code: do it or move it to the backlog file
 ]
 ignore = [
   "E203",   # Whitespace before ':': conflicts with the formatter

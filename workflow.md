@@ -13,7 +13,17 @@ Git etiquette and the mistakes log.
 
 ---
 
-## 2. The mistakes log
+## 2. Secrets
+
+Never print secret material: keys, tokens, passwords. Never open the files that
+hold them (`.env` files, `~/.secrets*`, ssh private keys, cloud credentials). To
+check a secret is configured, test presence without the value:
+`grep -q NAME file`, or `printenv NAME >/dev/null && echo set`. Guard 5 in
+[hooks.md](hooks.md) enforces the file ban.
+
+---
+
+## 3. The mistakes log
 
 Every project keeps a gitignored `MISTAKES.md`, newest entry first. It is
 evidence, not context: do not load it routinely, and do not go looking for rules
