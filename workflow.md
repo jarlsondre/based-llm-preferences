@@ -10,6 +10,10 @@ Git etiquette and the mistakes log.
 - Never run `gh` without asking first. This covers reading (`gh repo list`,
   `gh pr view`, `gh auth status`) as well as writing. Plain `git` may be used
   freely for reading.
+- When asked to commit: the message is one imperative sentence, as few words as
+  possible, in the usual git style ("add cluster rules", "fix judge
+  denominator"). No body unless jarl asks for one. Never mention AI involvement
+  anywhere in the commit: no co-author trailers, no "generated with" lines.
 
 ---
 

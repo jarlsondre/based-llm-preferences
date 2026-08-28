@@ -19,6 +19,14 @@ Rules for writing code.
 - Keep functions small, but do not extract a one-liner unless the separation
   makes semantic sense on its own, or the same line appears more than about
   three times.
+- A comment states what the code cannot: a constraint, a why, a warning. Never
+  narrate what the next line does. One line is the norm; if it needs more,
+  consider whether the explanation belongs in a doc instead.
+- Edit files with the harness's editing tools, never with string-replacement
+  commands or scripts (`sed -i`, `.replace()` one-liners). Those skip the hooks,
+  and a failed match is a silent no-op where the editing tool fails loudly. The
+  one exception is a bulk mechanical transform across many files; there, set the
+  encoding explicitly, count the replacements, and fail on zero matches.
 
 ---
 
