@@ -72,7 +72,7 @@ Merge into `.claude/settings.json`:
         "hooks": [
           {
             "type": "command",
-            "command": "command -v jq >/dev/null || { echo 'hook: jq missing; install a static jq binary into ~/.local/bin (no sudo needed)' >&2; exit 2; }; f=$(jq -r '.tool_input.file_path // empty'); case \"$f\" in *.py) r=$(uvx ruff check --no-cache \"$f\" 2>&1); rok=$?; t=$(uvx ty check \"$f\" 2>&1); tok=$?; if [ \"$rok\" -ne 0 ] || [ \"$tok\" -ne 0 ]; then [ \"$rok\" -ne 0 ] && printf '%s\\n' \"$r\" >&2; [ \"$tok\" -ne 0 ] && printf '%s\\n' \"$t\" >&2; exit 2; fi ;; esac"
+            "command": "command -v jq >/dev/null || { echo 'hook: jq missing; install a static jq binary into ~/.local/bin (no sudo needed)' >&2; exit 2; }; f=$(jq -r '.tool_input.file_path // empty'); case \"$f\" in *.py) r=$(uvx ruff check --no-cache --output-format concise \"$f\" 2>&1); rok=$?; t=$(uvx ty check --output-format concise \"$f\" 2>&1); tok=$?; if [ \"$rok\" -ne 0 ] || [ \"$tok\" -ne 0 ]; then [ \"$rok\" -ne 0 ] && printf '%s\\n' \"$r\" >&2; [ \"$tok\" -ne 0 ] && printf '%s\\n' \"$t\" >&2; exit 2; fi ;; esac"
           }
         ]
       }
@@ -149,7 +149,7 @@ Merge into `.claude/settings.json`:
         "hooks": [
           {
             "type": "command",
-            "command": "command -v jq >/dev/null || { echo 'hook: jq missing; install a static jq binary into ~/.local/bin (no sudo needed)' >&2; exit 2; }; a=$(jq -r '.stop_hook_active // false'); [ \"$a\" = \"true\" ] && exit 0; printf '%s' '{\"decision\":\"block\",\"reason\":\"reporting.md rule 11: if this session produced results not yet written to the report or its inbox, write them now, then stop. If nothing is unwritten, reply with exactly: nothing to report.\"}'"
+            "command": "command -v jq >/dev/null || { echo 'hook: jq missing; install a static jq binary into ~/.local/bin (no sudo needed)' >&2; exit 2; }; a=$(jq -r '.stop_hook_active // false'); [ \"$a\" = \"true\" ] && exit 0; printf '%s' '{\"decision\":\"block\",\"reason\":\"rule 11 (reporting.md): write any unwritten results now. If none, reply exactly: nothing to report.\"}'"
           }
         ]
       }

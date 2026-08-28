@@ -12,12 +12,12 @@ entry point.
   task at hand.
 - A rule found anywhere else (an old file, a habit, another session) is a
   proposal until it is written here.
+- `plans.md` and `sources.md` are jarl's bookkeeping: do not read them.
 
 ## Rules that always apply
 
-- Responses are concise by default and sized to what the question needs: a
-  lookup gets a line, an explanation gets paragraphs. Files follow the
-  conciseness rule.
+- Give the minimal sufficient answer: a lookup gets a line, an explanation gets
+  paragraphs. Nothing after the answer is done. Files follow the same rule.
 - Do not commit, push, or run `gh` without asking first; details in
   [workflow.md](workflow.md).
 
