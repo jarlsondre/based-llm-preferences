@@ -26,8 +26,7 @@ difference can be larger than the effect being reported.
 
 Put the denominator in the column header when it fits. When it needs a longer
 explanation, put a numbered marker in the header and explain it under the table.
-What matters is that every rate points at its denominator somewhere. A bare rate
-with nothing pointing anywhere is not acceptable.
+What matters is that every rate points at its denominator somewhere.
 
 If a number is quoted from an older source that only survives on one
 denominator, say so.

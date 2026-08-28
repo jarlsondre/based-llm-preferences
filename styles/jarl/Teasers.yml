@@ -1,0 +1,8 @@
+extends: existence
+message: "teaser (language.md): answer it on the spot or cut it"
+level: error
+ignorecase: true
+nonword: true
+tokens:
+  - 'one of (them|these|which) is (unexpected|surprising|interesting|notable|important)'
+  - 'will surprise'

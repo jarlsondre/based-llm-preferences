@@ -24,6 +24,7 @@ select = [
   "PLW2901", # loop variable overwritten inside the loop body
   "PLR1714", # merge repeated comparisons: x == 1 or x == 2 -> x in {1, 2}
   "PLC0414", # useless import alias
+  "PLW0603", # no global statements mutating module state; prefer pure functions
   "BLE", # no blind except Exception: failures stay loud
   "S110", # no try-except-pass
   "S112", # no try-except-continue

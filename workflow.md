@@ -1,6 +1,6 @@
 # Workflow
 
-Git etiquette and the mistakes log.
+Git etiquette, secrets, the mistakes log, and proposals.
 
 ---
 
@@ -30,9 +30,8 @@ check a secret is configured, test presence without the value:
 ## 3. The mistakes log
 
 Every project keeps a gitignored `MISTAKES.md`, newest entry first. It is
-evidence, not context: do not load it routinely, and do not go looking for rules
-in it. Rules live in the project's convention file and in this repo; the log is
-where the evidence for them accumulates.
+evidence, not context: do not load it routinely. Rules live in the project's
+convention file and in this repo.
 
 Append an entry the moment a mistake happens or jarl points one out. Each entry
 states:
@@ -50,3 +49,11 @@ propose a hook or lint rule instead of a prose rule (see [hooks.md](hooks.md)).
 
 Entries stay in the log after a rule is promoted. They are the audit trail: the
 record of why the rule exists, kept so the rule does not get argued away later.
+
+---
+
+## 4. Proposals
+
+A proposal is written into a file only after jarl approves the concrete change.
+A question or suggestion about the proposal keeps it open; unrelated questions
+in the same reply do not.

@@ -20,6 +20,9 @@ entry point.
   paragraphs. Nothing after the answer is done. Files follow the same rule.
 - Do not commit, push, or run `gh` without asking first; details in
   [workflow.md](workflow.md).
+- Every response ends with `**For jarl:**` followed by a numbered list of only
+  what is needed from him (approvals, commands to run, open questions), or
+  `**For jarl:** none` on one line. Nothing follows it.
 
 ## Topics
 
@@ -28,7 +31,7 @@ entry point.
 | [reporting.md](reporting.md)               | how to write down results, numbers, tables        |
 | [language.md](language.md)                 | writing style, banned patterns and words          |
 | [cluster.md](cluster.md)                   | Slurm clusters: submitting jobs, login nodes      |
-| [workflow.md](workflow.md)                 | git etiquette, the mistakes log                   |
+| [workflow.md](workflow.md)                 | git etiquette, secrets, the mistakes log          |
 | [code-style.md](code-style.md)             | linting, Python, Rust, testing                    |
 | [hooks.md](hooks.md)                       | Claude Code hooks that enforce rules mechanically |
 | [ruff.toml](ruff.toml)                     | starting ruff config for Python projects          |

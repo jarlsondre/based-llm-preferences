@@ -72,7 +72,7 @@ Merge into `.claude/settings.json`:
         "hooks": [
           {
             "type": "command",
-            "command": "command -v jq >/dev/null || { echo 'hook: jq missing; install a static jq binary into ~/.local/bin (no sudo needed)' >&2; exit 2; }; f=$(jq -r '.tool_input.file_path // empty'); case \"$f\" in *.py) r=$(uvx ruff check --no-cache --output-format concise \"$f\" 2>&1); rok=$?; t=$(uvx ty check --output-format concise \"$f\" 2>&1); tok=$?; if [ \"$rok\" -ne 0 ] || [ \"$tok\" -ne 0 ]; then [ \"$rok\" -ne 0 ] && printf '%s\\n' \"$r\" >&2; [ \"$tok\" -ne 0 ] && printf '%s\\n' \"$t\" >&2; exit 2; fi ;; esac"
+            "command": "command -v jq >/dev/null || { echo 'hook: jq missing; install a static jq binary into ~/.local/bin (no sudo needed)' >&2; exit 2; }; f=$(jq -r '.tool_input.file_path // empty'); case \"$f\" in *.py) r=$(uvx ruff check --no-cache --output-format concise \"$f\" 2>&1); rok=$?; t=$(uvx ty check --project \"$(dirname \"$f\")\" --output-format concise \"$f\" 2>&1); tok=$?; if [ \"$rok\" -ne 0 ] || [ \"$tok\" -ne 0 ]; then [ \"$rok\" -ne 0 ] && printf '%s\\n' \"$r\" >&2; [ \"$tok\" -ne 0 ] && printf '%s\\n' \"$t\" >&2; exit 2; fi ;; esac"
           }
         ]
       }
@@ -88,6 +88,8 @@ Notes:
 - Both tools always run, and only failing output is reported.
 - ruff resolves the nearest config, so the project's own `ruff.toml` applies;
   without one, ruff defaults apply.
+- ty's `--project` flag is deliberate: it finds the file's project venv from any
+  cwd, where `uv run` would hide it behind an overlay env.
 - Non-Python files pass through untouched. Rust has no per-edit equivalent
   (clippy compiles the whole crate); run `cargo clippy -- -D warnings` per
   code-style.md instead.
@@ -166,7 +168,7 @@ Notes:
 
 ---
 
-## 5. Secrets guard: no reading secret files
+## 5. Secrets guard: no reading or printing secrets
 
 Enforces the secrets rule in workflow.md. Any Bash command, Read, or Grep whose
 input touches a secret-holding file (`.env` and `.envrc` files, `.secrets*`, ssh

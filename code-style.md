@@ -1,7 +1,5 @@
 # Code style
 
-Rules for writing code.
-
 ---
 
 ## 1. Any language
