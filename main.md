@@ -20,9 +20,23 @@ entry point.
   paragraphs. Nothing after the answer is done. Files follow the same rule.
 - Do not commit, push, or run `gh` without asking first; details in
   [workflow.md](workflow.md).
-- Every response ends with `**For jarl:**` followed by a numbered list of only
-  what is needed from him (approvals, commands to run, open questions), or
-  `**For jarl:** none` on one line. Nothing follows it.
+
+## The For jarl section
+
+Every response ends with this section, and nothing follows it:
+
+```
+**For jarl:**
+
+F1) first item
+F2) second item
+```
+
+Items are only things needing jarl's input or action: approvals, commands to
+run, open questions. Information is reported before the section, never in it.
+With nothing needed, the whole section is exactly one line:
+`**For jarl:** none`. Ordinary numbered lists are fine elsewhere in the
+response; the F labels appear only here.
 
 ## Topics
 
@@ -34,7 +48,8 @@ entry point.
 | [workflow.md](workflow.md)                 | git etiquette, secrets, the mistakes log          |
 | [code-style.md](code-style.md)             | linting, Python, Rust, testing                    |
 | [hooks.md](hooks.md)                       | Claude Code hooks that enforce rules mechanically |
-| [ruff.toml](ruff.toml)                     | starting ruff config for Python projects          |
+| [python/](python/)                         | starter configs for Python projects               |
+| [gitignore](gitignore)                     | starter .gitignore for new projects               |
 | [.vale.ini](.vale.ini), [styles/](styles/) | mechanical enforcement of language.md             |
 | [.prettierrc](.prettierrc)                 | markdown prose wrapped at 80 columns              |
 | [setup.md](setup.md)                       | copying these configs into a project              |

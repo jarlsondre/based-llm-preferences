@@ -1,0 +1,8 @@
+# Starter for new projects; extend per project.
+MISTAKES.md
+.DS_Store
+.vale.ini
+.prettierrc
+styles
+.venv
+__pycache__/

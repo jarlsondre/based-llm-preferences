@@ -7,14 +7,14 @@ loudly and gets re-created, while a copy would go stale silently.
 ```sh
 PREFS=<this repo's clone: the directory this file is in>
 ln -s "$PREFS/.vale.ini" "$PREFS/.prettierrc" "$PREFS/styles" .
-cp "$PREFS/ruff.toml" .   # Python projects only
+cp "$PREFS/gitignore" .gitignore   # new projects only
+cp "$PREFS/python/"* .             # Python projects only
 ```
 
-- The symlinks are per-machine: add `.vale.ini`, `.prettierrc`, and `styles` to
-  the project's `.gitignore`. On a machine where they are missing or dangling,
-  re-run the `ln` line.
-- `ruff.toml` is copied, not linked: it is a starting config the project owns,
-  may change, and gets committed so collaborators and CI have it.
+- The symlinks are per-machine and gitignored (the `gitignore` starter covers
+  them). On a machine where they are missing or dangling, re-run the `ln` line.
+- The copied files are starters: the project owns them, extends them, and
+  commits them.
 - Never recreate any of these files from memory.
 
 The Claude Code guards install differently (they merge into

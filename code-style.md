@@ -34,9 +34,11 @@
   everything. A sizeable detour to keep uv is the correct trade; dropping it
   needs a really good reason.
 - **ruff** lints and formats. New projects start from this repo's
-  [ruff.toml](ruff.toml).
+  [python/ruff.toml](python/ruff.toml).
 - **ty** checks types. New code carries type annotations; the ANN rules in ruff
-  enforce this.
+  enforce this. ty config lives in `ty.toml`, not `pyproject.toml`.
+- **pytest** runs tests, starting from this repo's
+  [python/pytest.ini](python/pytest.ini): warnings are errors.
 
 ---
 
