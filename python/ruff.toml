@@ -11,6 +11,7 @@ select = [
   "W",   # pycodestyle warnings
   "B",   # flake8-bugbear: likely bugs and bad practices (e.g. mutable defaults)
   "C4",  # flake8-comprehensions: unnecessary or suboptimal comprehensions
+  "C901", # mccabe complexity: decompose the function; never noqa without asking jarl first
   "SIM", # flake8-simplify: redundant ifs, returns, boolean logic
   "UP",  # pyupgrade: use modern Python syntax (e.g. f-strings, `Path()` literals)
   "PTH", # flake8-use-pathlib: use pathlib instead of os.path
@@ -46,7 +47,6 @@ ignore = [
   "SIM108", # Don't always use ternary operators: they can be kind of hard to read sometimes
   "N806",   # Allow UPPER_CASE_VARIABLE_NAMES in function scopes (for default values etc.)
   "N812",   # Allow importing stuff as uppercase (e.g. function as F)
-  "ANN401", # Allow `Any` in annotations: needed at framework boundaries (request data, kwargs)
 ]
 fixable = ["ALL"]
 
