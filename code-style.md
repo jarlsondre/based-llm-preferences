@@ -36,7 +36,10 @@
 - **ruff** lints and formats. New projects start from this repo's
   [python/ruff.toml](python/ruff.toml).
 - **ty** checks types. New code carries type annotations; the ANN rules in ruff
-  enforce this. ty config lives in `ty.toml`, not `pyproject.toml`.
+  enforce this. ty config lives in `ty.toml`, not `pyproject.toml`. `ty.toml`
+  and `pyrightconfig.json` (the LSP) are a mirrored pair, starting from this
+  repo's [python/](python/) copies: change both, or pyright reports imports that
+  resolve fine.
 - **pytest** runs tests, starting from this repo's
   [python/pytest.ini](python/pytest.ini): warnings are errors.
 

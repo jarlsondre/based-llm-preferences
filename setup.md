@@ -19,3 +19,14 @@ cp "$PREFS/python/"* .             # Python projects only
 
 The Claude Code guards install differently (they merge into
 `.claude/settings.json`); see [hooks.md](hooks.md).
+
+LSP plugins install once per machine, not per project. With `pyright-langserver`
+and `rust-analyzer` on PATH:
+
+```sh
+claude plugin install pyright-lsp@claude-plugins-official
+claude plugin install rust-analyzer-lsp@claude-plugins-official
+```
+
+Pick user scope when prompted. Verify with `claude plugin list`: a plugin can be
+installed yet disabled; enable it and restart the session.

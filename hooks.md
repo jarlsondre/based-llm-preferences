@@ -208,3 +208,40 @@ Notes:
 - The pattern matches the whole tool input, so a Grep into a secret file is
   caught by its path, and a false positive costs one blocked call with the safe
   alternative named.
+
+---
+
+## 6. Approval guard: destructive commands
+
+Any Bash command matching a destructive pattern triggers a permission prompt for
+jarl: recursive force delete (`rm -rf` and its flag variants),
+`git reset --hard`, force push, piping a download into a shell
+(`curl ... | sh`), and `chmod 777`.
+
+Merge into `.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v jq >/dev/null || { echo 'hook: jq missing; install a static jq binary into ~/.local/bin (no sudo needed)' >&2; exit 2; }; cmd=$(jq -r '.tool_input.command // empty'); if printf '%s' \"$cmd\" | grep -qE 'rm -[a-zA-Z]*[rR][a-zA-Z]*f|rm -[a-zA-Z]*f[a-zA-Z]*[rR]|rm -[rR] -f|rm -f -[rR]|git reset --hard|git push [^|&;]*--force|git push [^|&;]*-f( |$)|(curl|wget) [^|]*\\| *(ba|z)?sh( |$)|chmod [^|&;]*777'; then printf '%s' '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"ask\",\"permissionDecisionReason\":\"destructive command: needs jarl approval\"}}'; fi"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+Notes:
+
+- A guard against the accidental case, like the secrets guard: a reworded
+  command can evade the patterns. It earns its keep in permission modes that
+  skip prompts, where a slip would otherwise run unreviewed.
+- A false positive (say, a filename containing `777`) costs one extra prompt,
+  never a silent allow.

@@ -20,6 +20,10 @@ entry point.
   paragraphs. Nothing after the answer is done. Files follow the same rule.
 - Do not commit, push, or run `gh` without asking first; details in
   [workflow.md](workflow.md).
+- Prefer LSP operations for code navigation (definitions, references, symbols);
+  grep is for text and pattern searches.
+- If an LSP call fails because no language server is configured, say so in the
+  For jarl section; the fix is in setup.md.
 
 ## The For jarl section
 
@@ -53,3 +57,4 @@ response; the F labels appear only here.
 | [.vale.ini](.vale.ini), [styles/](styles/) | mechanical enforcement of language.md             |
 | [.prettierrc](.prettierrc)                 | markdown prose wrapped at 80 columns              |
 | [setup.md](setup.md)                       | copying these configs into a project              |
+| [tools/](tools/)                           | scripts to run, e.g. fetch.py for blocked pages   |

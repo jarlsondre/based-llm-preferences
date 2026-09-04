@@ -1,0 +1,4 @@
+# Mirrored in pyrightconfig.json (LSP); change both.
+[environment]
+python = ".venv"
+extra-paths = ["src"]

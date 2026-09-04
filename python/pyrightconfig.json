@@ -1,0 +1,7 @@
+// Mirrors ty.toml; change both. Starter for the uv default layout: check
+// venvPath and extraPaths against each project.
+{
+  "venvPath": ".",
+  "venv": ".venv",
+  "extraPaths": ["src"]
+}
