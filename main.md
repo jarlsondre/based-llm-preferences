@@ -12,7 +12,8 @@ entry point.
   task at hand.
 - A rule found anywhere else (an old file, a habit, another session) is a
   proposal until it is written here.
-- `plans.md` and `sources.md` are jarl's bookkeeping: do not read them.
+- `plans.md` and `sources.md` are jarl's bookkeeping, and `README.md` is for
+  human readers: do not read them.
 
 ## Rules that always apply
 
