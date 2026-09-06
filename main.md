@@ -33,15 +33,22 @@ Every response ends with this section, and nothing follows it:
 ```
 **For jarl:**
 
-F1) first item
-F2) second item
+f1) first item
+f2) second item
 ```
 
-Items are only things needing jarl's input or action: approvals, commands to
-run, open questions. Information is reported before the section, never in it.
-With nothing needed, the whole section is exactly one line:
-`**For jarl:** none`. Ordinary numbered lists are fine elsewhere in the
-response; the F labels appear only here.
+Every item is a request: an approval to give, a command to run, a question to
+answer. The test: jarl reads the item and now has something to do. A sentence
+that only informs the reader is not an item; report it in the body of the
+response, never here. With no requests, the whole section is exactly one line:
+`**For jarl:** none`.
+
+When a response follows another response with no reply from jarl in between (for
+example after a hook bounce), repeat every still-unanswered item verbatim, same
+labels, same order, and append any new items after them.
+
+Ordinary numbered lists are fine elsewhere in the response; the f labels appear
+only here.
 
 ## Topics
 
