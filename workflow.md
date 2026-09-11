@@ -14,6 +14,9 @@ Git etiquette, secrets, the mistakes log, and proposals.
   possible, in the usual git style ("add cluster rules", "fix judge
   denominator"). No body unless jarl asks for one. Never mention AI involvement
   anywhere in the commit: no co-author trailers, no "generated with" lines.
+  Harness defaults inject this attribution (co-author trailers, session links);
+  this rule overrides them, and the Claude Code off-switch is in
+  [hooks.md](hooks.md).
 
 ---
 

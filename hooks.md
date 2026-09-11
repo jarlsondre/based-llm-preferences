@@ -282,3 +282,32 @@ Notes:
   when they accumulate.
 - Failure handling matches guard 3: missing `jq`, missing config, and missing
   tools all block the edit with the fix named.
+
+---
+
+## 8. Settings: no commit or PR attribution
+
+Enforces the no-AI-attribution rule in workflow.md section 1. Claude Code by
+default appends attribution to commits and PRs; these settings turn all of it
+off. Not project-specific, so it goes in user scope, once per machine.
+
+Merge into `~/.claude/settings.json`:
+
+```json
+{
+  "attribution": {
+    "commit": false,
+    "pr": false,
+    "sessionUrl": false
+  }
+}
+```
+
+Notes:
+
+- `commit` is the co-author trailer, `pr` the "generated with" footer in PR
+  bodies, `sessionUrl` the session link trailer.
+- `includeCoAuthoredBy` is the deprecated older key; replace it with this object
+  where found.
+- Other harnesses have no switch; there the workflow.md prose rule is the
+  backstop.
