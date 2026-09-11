@@ -47,3 +47,30 @@ the scheduler. Heavy work is scheduled: about a minute of raw computation
 cumulatively even when spread over a longer run; any GPU use; or memory heavy
 enough to crowd a shared machine. Imports and data loading do not count toward
 the minute.
+
+---
+
+## 4. The runbook
+
+Every project that submits jobs keeps `runbook.jsonl` in the project root: one
+JSON object per line, appended at submission. An entry is real compute: a
+scheduler submission (`sbatch`, `srun`, `salloc`) or anything else that runs on
+a compute node. Login-node work (edits, analyses, log reading) is never logged.
+Fields:
+
+- `job_id`: from the sbatch output
+- `cluster`: which cluster, e.g. "euler"
+- `submitted`: ISO 8601 timestamp with timezone
+- `commit`: `git rev-parse HEAD` at submit
+- `command`: the exact submit line, verbatim
+- `owner`: who ran it (reporting.md rule 4)
+- `what`: what the job computes; max 100 characters
+- `why`: why the job is needed, with any context worth keeping; max 500
+  characters
+- `time_requested`: the walltime asked for
+- `time_used`: "TBD" at submit
+- `outcome`: "TBD" at submit
+
+The first session that reads the job's results fills `time_used` and `outcome`
+from `sacct`. The log is evidence, like the mistakes log: append and update it,
+never load it routinely.

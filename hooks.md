@@ -245,3 +245,40 @@ Notes:
   skip prompts, where a slip would otherwise run unreviewed.
 - A false positive (say, a filename containing `777`) costs one extra prompt,
   never a silent allow.
+
+---
+
+## 7. Lint guard: Vale and chktex on every LaTeX edit
+
+The LaTeX twin of guard 3. After every edit to a `.tex` file, Vale runs with the
+nearest `.vale.ini` (whose `[*.tex]` section applies the language rules), then
+chktex checks the LaTeX itself; findings from either come back as a blocking
+error.
+
+Merge into `.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|MultiEdit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v jq >/dev/null || { echo 'hook: jq missing; install a static jq binary into ~/.local/bin (no sudo needed)' >&2; exit 2; }; f=$(jq -r '.tool_input.file_path // empty'); case \"$f\" in *.tex) d=$(cd \"$(dirname \"$f\")\" && pwd); cfg=\"\"; while :; do { [ -e \"$d/.vale.ini\" ] || [ -L \"$d/.vale.ini\" ]; } && { cfg=\"$d/.vale.ini\"; break; }; [ \"$d\" = \"/\" ] && break; d=$(dirname \"$d\"); done; [ -n \"$cfg\" ] || { echo 'hook: no Vale config found; run setup.md from the preferences repo' >&2; exit 2; }; command -v vale >/dev/null || { echo 'hook: vale missing; install per language.md section 4' >&2; exit 2; }; command -v chktex >/dev/null || { echo 'hook: chktex missing; it ships with TeX Live' >&2; exit 2; }; out=$(vale --config \"$cfg\" --output line \"$f\" 2>&1) || { printf '%s\\n' \"$out\" >&2; exit 2; }; cout=$(chktex -q \"$f\" 2>&1) || { printf '%s\\n' \"$cout\" >&2; exit 2; } ;; esac"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+Notes:
+
+- chktex runs with its defaults (it ships with TeX Live, so it is already on any
+  machine that compiles LaTeX). Project-specific opinions go in a `.chktexrc`
+  when they accumulate.
+- Failure handling matches guard 3: missing `jq`, missing config, and missing
+  tools all block the edit with the fix named.

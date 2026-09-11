@@ -7,3 +7,6 @@ tokens:
   - ' – '
   - '[A-Za-z]--[A-Za-z]'
   - ' -- '
+  # LaTeX em-dash; letters required on both sides so md front matter and
+  # table rows stay safe.
+  - '[A-Za-z] ?--- ?[A-Za-z]'
