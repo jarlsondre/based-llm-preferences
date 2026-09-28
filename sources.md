@@ -32,3 +32,10 @@ Where the rules came from. Bookkeeping for jarl; not for models to read.
   (https://augmentingcognition.com/ltm.html): distilled into anki.md.
 - Matuschak, "How to write good prompts" (https://andymatuschak.org/prompts):
   distilled into anki.md, with jarl's own conventions.
+- Wozniak, "Twenty rules of formulating knowledge"
+  (https://www.supermemo.com/en/blog/twenty-rules-of-formulating-knowledge):
+  basics first, which the priority order in anki.md follows. No source ranks
+  kinds of knowledge; the three tiers are our own design.
+- Rohrer 2012, "Interleaving helps students distinguish among similar concepts"
+  (https://files.eric.ed.gov/fulltext/ED536926.pdf): why distinction cards are
+  welcome in every tier of anki.md.

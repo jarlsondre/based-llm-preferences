@@ -1,10 +1,10 @@
 # Anki cards
 
-Flashcards for jarl's courses. Distilled from Nielsen and Matuschak (links at
-the bottom); fetch a source only when this file cannot answer.
+Flashcards for anything jarl studies. Distilled from Nielsen and Matuschak
+(links at the bottom); fetch a source only when this file cannot answer.
 
-Course material jarl provides is the notation source and the arbiter when
-unsure; match it. If no material is found, ask jarl whether any exists.
+Material jarl provides is the notation source and the arbiter when unsure; match
+it. If no material is found, ask jarl whether any exists.
 
 ## 1. Which cards exist
 
@@ -14,8 +14,16 @@ unsure; match it. If no material is found, ask jarl whether any exists.
 - Many small cards over few big ones, but at least two or three per topic. Skip
   trivial inferences, material jarl does not care about, and anything
   speculative or wrong.
-- Math priority: definitions, then results, then proofs; intuition and
-  terminology cards are welcome in every tier.
+- Priority, in this order:
+  1. What a thing is: terms and definitions. In math: definitions and notation.
+  2. What is true of it and how it works. In math: theorems and lemmas.
+  3. Step-by-step sequences, which cost one card per step. In math: proofs.
+
+  Intuition, terminology, and distinctions between similar concepts are welcome
+  in every tier. A distinction needs both sides carded first.
+
+- If there are past exams or tests, read them before proposing cards. What they
+  ask about gets cards first, ahead of the order above.
 
 ## 2. Writing a card
 
@@ -26,8 +34,14 @@ unsure; match it. If no material is found, ask jarl whether any exists.
   symmetric"; also defining \(f(x) = x^T A x\) is unused and gets cut.
 - Same answer every time: enough context to exclude alternative answers, no
   more. Short questions, no yes/no questions.
-- Proof cloze is incremental: earlier steps visible, all later steps hidden
-  (they give the blank away). Cloze elsewhere is rare and short.
+- Ordered material is one card per step: written once as a `"type": "steps"`
+  entry, which the tool expands. Card k shows the full numbered list: earlier
+  steps in full, step k blanked, later steps as "hidden" placeholders (their
+  content gives the blank away, their count does not). Proofs are written this
+  way. So are algorithms and protocols, where the order is the knowledge. Other
+  cloze cards are rare and short.
+- Code goes in backticks, inline or as a fenced block. The tool shows it
+  literally, in monospace.
 - An optional details footer for the curious is allowed: never needed to answer,
   never filler. If unsure, omit it.
 - A failing card is split into atomic pieces (keep an integrative version); a
@@ -35,16 +49,17 @@ unsure; match it. If no material is found, ask jarl whether any exists.
 
 ## 3. Building the deck
 
-- `anki/cards.json` in the course repo is the source of truth and where any
-  agent looks up existing cards; every card has a stable id.
+- `anki/` in the project's repo is the source of truth and where any agent looks
+  up existing cards: one JSON file per subdeck, each naming its deck. Every card
+  has a stable id, unique across the files.
 - Push after stating what changes and getting jarl's yes:
-  `uv run tools/anki.py anki/cards.json` from this repo's clone (AnkiConnect,
-  Anki open), or `--apkg` for a file to import manually.
+  `uv run tools/anki.py anki/` from this repo's clone (AnkiConnect, Anki open),
+  or `--apkg` for a file to import manually.
 - The tool owns the mechanics; never work around it: it validates cards
   (duplicate ids, yes/no questions, missing fields, math not in MathJax
   `\(...\)`), applies the one shared note type (per-card formatting is banned),
-  updates by id without duplicating, and never re-adds cards jarl deleted in
-  review.
+  updates by id without duplicating, moves a card when its entry changes file,
+  and never re-adds cards jarl deleted in review.
 
 ## Sources
 
