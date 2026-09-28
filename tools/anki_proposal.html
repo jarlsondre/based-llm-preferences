@@ -1,0 +1,289 @@
+<title>__TITLE__</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --ground:#f2f5f4; --surface:#ffffff; --ink:#18211f; --muted:#5a6966; --line:#d3dbd8;
+  --accent:#0f6b5c; --accent-ink:#ffffff;
+  --g0:#0f6b5c; --g0-bg:#dcefea; --g1:#8a5a00; --g1-bg:#f6ead2; --g2:#5b4b8a; --g2-bg:#e7e2f3;
+  --warn:#a4371f; --warn-bg:#f8e3dd; --dropped:#8b9794;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#121716; --surface:#1b2221; --ink:#e4ebe8; --muted:#9aa8a4; --line:#2f3a38;
+    --accent:#4fc3a8; --accent-ink:#0c1614;
+    --g0:#5fd0b6; --g0-bg:#15342e; --g1:#e0b052; --g1-bg:#38290c; --g2:#b3a3e6; --g2-bg:#2a2344;
+    --warn:#f09077; --warn-bg:#3d1c14; --dropped:#66726f;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#121716; --surface:#1b2221; --ink:#e4ebe8; --muted:#9aa8a4; --line:#2f3a38;
+  --accent:#4fc3a8; --accent-ink:#0c1614;
+  --g0:#5fd0b6; --g0-bg:#15342e; --g1:#e0b052; --g1-bg:#38290c; --g2:#b3a3e6; --g2-bg:#2a2344;
+  --warn:#f09077; --warn-bg:#3d1c14; --dropped:#66726f;
+}
+*{box-sizing:border-box}
+body{background:var(--ground);color:var(--ink);font-family:"IBM Plex Sans",-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:15px;line-height:1.5}
+.wrap{max-width:1200px;margin:0 auto;padding-inline:20px;padding-block:28px 64px;display:flex;flex-direction:column;gap:28px}
+h1{font-family:"IBM Plex Sans Condensed","IBM Plex Sans",Arial,sans-serif;font-weight:600;font-size:30px;line-height:1.15;margin:0;text-wrap:balance}
+h2{font-family:"IBM Plex Sans Condensed","IBM Plex Sans",Arial,sans-serif;font-weight:600;font-size:22px;margin:0;text-wrap:balance}
+h3{font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0}
+p{margin:0;max-width:68ch}
+.lede{color:var(--muted)}
+header.top{display:flex;flex-direction:column;gap:10px}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:13.5px;color:var(--muted)}
+.legend span{display:inline-flex;gap:7px;align-items:baseline}
+.tag{display:inline-block;font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-size:12px;font-weight:500;padding:1px 7px;border-radius:3px}
+.tag.g0{color:var(--g0);background:var(--g0-bg)} .tag.g1{color:var(--g1);background:var(--g1-bg)} .tag.g2{color:var(--g2);background:var(--g2-bg)}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:12px 16px;display:flex;flex-wrap:wrap;gap:12px 28px;align-items:center}
+.stat{display:flex;flex-direction:column;gap:0}
+.stat b{font-size:24px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.1}
+.stat small{font-size:12px;color:var(--muted)}
+.stat.g0 b{color:var(--g0)} .stat.g1 b{color:var(--g1)} .stat.g2 b{color:var(--g2)}
+.save{margin-left:auto;font-size:12.5px;color:var(--muted);text-align:right}
+.controls{display:flex;flex-wrap:wrap;gap:8px 20px;align-items:center}
+.controls label{font-size:13.5px;display:inline-flex;gap:6px;align-items:center;cursor:pointer}
+button{font:inherit;font-size:13px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:4px 10px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#subdecks{display:flex;flex-direction:column;gap:36px}
+section.subdeck{display:flex;flex-direction:column;gap:14px}
+.subdeck-head{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:baseline;border-bottom:2px solid var(--ink);padding-bottom:6px}
+.subdeck-head .count{color:var(--muted);font-size:13.5px;font-variant-numeric:tabular-nums}
+.group{display:flex;flex-direction:column;gap:6px}
+.group-head{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center}
+.group-head .spacer{flex:1}
+.tablewrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:6px}
+table{border-collapse:collapse;width:100%;min-width:900px;table-layout:fixed}
+th.c-keep{width:52px} th.c-id{width:180px} th.c-n{width:64px;text-align:right} th.c-exam{width:130px} th.c-src{width:170px} th.c-note{width:150px}
+th,td{padding:7px 10px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line);font-size:14px}
+tr:last-child td{border-bottom:0}
+th{font-size:11.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+td.id{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-size:12.5px;overflow-wrap:anywhere}
+td.n{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+td.src,td.exam{font-size:13px;color:var(--muted)}
+input[type=checkbox]{width:17px;height:17px;accent-color:var(--accent);cursor:pointer}
+tr.dropped td{color:var(--dropped)}
+tr.dropped td.asks,tr.dropped td.id{text-decoration:line-through}
+.missing{color:var(--warn);background:var(--warn-bg);padding:0 6px;border-radius:3px;font-size:12.5px;white-space:nowrap}
+input.note{width:100%;font:inherit;font-size:13px;color:var(--ink);background:transparent;border:0;border-bottom:1px dashed var(--line);padding:2px 0}
+body.hide-dropped tr.dropped{display:none}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+.panel label{font-size:13.5px;color:var(--muted)}
+textarea{width:100%;font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-size:12.5px;color:var(--ink);background:var(--ground);border:1px solid var(--line);border-radius:4px;padding:10px;resize:vertical}
+@media (max-width:520px){.bar{gap:8px 16px;padding:8px 12px}.save{margin-left:0;text-align:left}.stat b{font-size:18px}.stat small{font-size:11px}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <h3 id="subtitle"></h3>
+    <h1>Which cards earn a place in the review?</h1>
+    <p class="lede">Untick a row to drop it. Each row is what the card would ask. Question and answer text is written only for the rows you keep. Your ticks and notes are saved as you go.</p>
+    <div class="legend" id="legend"></div>
+  </header>
+
+  <div class="bar" id="bar"></div>
+
+  <div class="controls" id="controls"></div>
+
+  <div id="subdecks"></div>
+
+  <section class="panel">
+    <h2>Your decisions as text</h2>
+    <p class="lede">Claude reads the saved choices directly. This box holds the same information, in case you would rather paste it.</p>
+    <textarea id="summary" rows="8" readonly aria-label="Your decisions as text"></textarea>
+    <label for="general">Anything else Claude should know</label>
+    <textarea id="general" rows="3"></textarea>
+  </section>
+</div>
+
+<script id="data" type="application/json">__DATA__</script>
+<script>
+(function(){
+  var DATA = JSON.parse(document.getElementById("data").textContent);
+  var ROWS = DATA.rows, GROUPS = Object.keys(DATA.groups || {}), PER_DAY = DATA.new_per_day || 0;
+  var DOC = "review/" + DATA.name, LS = "anki-proposal-" + DATA.name;
+  var SUBDECKS = [];
+  ROWS.forEach(function(r){ if (SUBDECKS.indexOf(r.subdeck) < 0) SUBDECKS.push(r.subdeck); });
+  var HAS_EXAM = ROWS.some(function(r){ return !!r.exam; });
+  var TOTAL = ROWS.reduce(function(n, r){ return n + r.cards; }, 0);
+  var state = {dropped:{}, notes:{}, general:""};
+  var db = null, saving = false, dirty = false, timer = null, saveEl = null;
+  var LOCAL_ONLY = "Saved in this browser only. Paste the text box to Claude.";
+
+  function $(id){ return document.getElementById(id); }
+  function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
+  function cls(g){ return "g" + (GROUPS.indexOf(g) % 3); }
+  function days(n){ return Math.ceil(n / PER_DAY); }
+  function material(r){
+    var m = r.material, parts = [];
+    if (typeof m === "string" && m) parts.push(m);
+    else if (m) Object.keys(m).forEach(function(k){
+      var v = [].concat(m[k]);
+      if (v.length) parts.push(k + " " + v.join(", "));
+    });
+    return parts.length ? esc(parts.join(" · ")) : '<span class="missing">not in material</span>';
+  }
+
+  function buildChrome(){
+    $("subtitle").textContent = DATA.subtitle || DATA.title;
+    var legend = GROUPS.map(function(g){
+      return '<span><span class="tag ' + cls(g) + '">' + esc(g) + '</span> ' + esc(DATA.groups[g]) + '</span>';
+    });
+    legend.push('<span><span class="missing">not in material</span> absent from the material</span>');
+    $("legend").innerHTML = legend.join("");
+
+    var bar = '<div class="stat"><b id="s-total">0</b><small>cards kept of ' + TOTAL + '</small></div>';
+    GROUPS.forEach(function(g, i){
+      bar += '<div class="stat ' + cls(g) + '"><b id="s-g' + i + '">0</b><small>group ' + esc(g) + '</small></div>';
+    });
+    if (PER_DAY) bar += '<div class="stat"><b id="s-days">0</b><small>days for the largest subdeck, at ' + PER_DAY + ' a day</small></div>';
+    bar += '<div class="save" id="save">Loading saved choices</div>';
+    $("bar").innerHTML = bar;
+    saveEl = $("save");
+
+    var controls = "";
+    if (GROUPS.length > 1) controls += '<button type="button" id="keep-first">Keep only group ' + esc(GROUPS[0]) + '</button>';
+    controls += '<button type="button" id="keep-all">Keep everything</button>' +
+      '<button type="button" id="drop-all">Drop everything</button>' +
+      '<label><input type="checkbox" id="hide-dropped"> Hide dropped rows</label>';
+    $("controls").innerHTML = controls;
+  }
+
+  function buildTables(){
+    var html = "", groups = GROUPS.length ? GROUPS : [""];
+    SUBDECKS.forEach(function(name, si){
+      html += '<section class="subdeck"><div class="subdeck-head"><h2>' + esc(name) + '</h2><span class="count" id="lc-' + si + '"></span>' +
+        '<span class="spacer"></span></div>';
+      groups.forEach(function(g){
+        var rows = [];
+        ROWS.forEach(function(r, i){ if (r.subdeck === name && (r.group || "") === g) rows.push(i); });
+        if (!rows.length) return;
+        html += '<div class="group"><div class="group-head">';
+        if (g) html += '<span class="tag ' + cls(g) + '">' + esc(g) + '</span><h3>' + esc(DATA.groups[g]) + '</h3>';
+        html += '<span class="spacer"></span>' +
+          '<button type="button" data-bulk="keep" data-s="' + si + '" data-g="' + esc(g) + '">Keep all</button>' +
+          '<button type="button" data-bulk="drop" data-s="' + si + '" data-g="' + esc(g) + '">Drop all</button></div>' +
+          '<div class="tablewrap"><table><thead><tr><th class="c-keep">Keep</th><th class="c-id">Id</th><th>The card asks</th><th class="c-n">Cards</th>' +
+          (HAS_EXAM ? '<th class="c-exam">Past exam or test</th>' : '') + '<th class="c-src">In the material</th><th class="c-note">Your note</th></tr></thead><tbody>';
+        rows.forEach(function(i){
+          var r = ROWS[i];
+          html += '<tr id="r-' + i + '"><td class="keep"><input type="checkbox" id="k-' + i + '" data-i="' + i + '" aria-label="Keep ' + esc(r.id) + '" checked></td>' +
+            '<td class="id">' + esc(r.id) + '</td><td class="asks">' + esc(r.asks) + '</td><td class="n">' + r.cards + '</td>' +
+            (HAS_EXAM ? '<td class="exam">' + (r.exam ? esc(r.exam) : "none") + '</td>' : '') +
+            '<td class="src">' + material(r) + '</td>' +
+            '<td><input class="note" id="n-' + i + '" data-i="' + i + '" type="text" aria-label="Note for ' + esc(r.id) + '" placeholder="note"></td></tr>';
+        });
+        html += '</tbody></table></div></div>';
+      });
+      html += '</section>';
+    });
+    $("subdecks").innerHTML = html;
+  }
+
+  function render(){
+    var kept = {}, per = SUBDECKS.map(function(){ return {kept:0, all:0}; }), total = 0;
+    ROWS.forEach(function(r, i){
+      var drop = !!state.dropped[r.id], s = per[SUBDECKS.indexOf(r.subdeck)];
+      $("r-" + i).classList.toggle("dropped", drop);
+      $("k-" + i).checked = !drop;
+      var note = $("n-" + i);
+      if (document.activeElement !== note) note.value = state.notes[r.id] || "";
+      s.all += r.cards;
+      if (!drop){ s.kept += r.cards; total += r.cards; kept[r.group || ""] = (kept[r.group || ""] || 0) + r.cards; }
+    });
+    $("s-total").textContent = total;
+    GROUPS.forEach(function(g, i){ $("s-g" + i).textContent = kept[g] || 0; });
+    var worst = 0;
+    per.forEach(function(s, si){
+      var text = s.kept + " of " + s.all + " cards kept";
+      if (PER_DAY){ text += " · " + days(s.kept) + " days at " + PER_DAY + " a day"; worst = Math.max(worst, days(s.kept)); }
+      $("lc-" + si).textContent = text;
+    });
+    if (PER_DAY) $("s-days").textContent = worst;
+    var general = $("general");
+    if (document.activeElement !== general) general.value = state.general || "";
+    var dropped = ROWS.filter(function(r){ return state.dropped[r.id]; });
+    var lines = ["Kept " + total + " cards, dropped " + dropped.length + " rows."];
+    if (dropped.length) lines.push("Dropped: " + dropped.map(function(r){ return r.id; }).join(", "));
+    Object.keys(state.notes).forEach(function(id){ if (state.notes[id]) lines.push("Note " + id + ": " + state.notes[id]); });
+    if (state.general) lines.push("General: " + state.general);
+    $("summary").value = lines.join("\n");
+    return total;
+  }
+
+  function body(total){
+    var notes = {};
+    Object.keys(state.notes).forEach(function(k){ if (state.notes[k]) notes[k] = state.notes[k]; });
+    return {dropped:Object.keys(state.dropped).filter(function(k){ return state.dropped[k]; }).sort(), notes:notes,
+            general:state.general, keptCards:total, savedAt:new Date().toISOString()};
+  }
+  function apply(d){
+    if (!d) return;
+    state.dropped = {}; (d.dropped || []).forEach(function(id){ state.dropped[id] = true; });
+    state.notes = d.notes || {}; state.general = d.general || "";
+  }
+  var latest = null;
+  function changed(){
+    latest = body(render()); dirty = true;
+    try { localStorage.setItem(LS, JSON.stringify(latest)); } catch(e){}
+    clearTimeout(timer); timer = setTimeout(flush, 700);
+    saveEl.textContent = "Saving";
+  }
+  function flush(){
+    if (!db){ saveEl.textContent = LOCAL_ONLY; dirty = false; return; }
+    if (saving || !dirty) return;
+    saving = true; dirty = false;
+    db.doc(DOC).set(latest).then(function(){
+      saving = false; saveEl.textContent = "Saved. Claude can read these choices.";
+      if (dirty) flush();
+    }, function(){
+      saving = false; saveEl.textContent = "Could not save online. Kept in this browser; paste the text box to Claude.";
+    });
+  }
+
+  buildChrome();
+  buildTables();
+  try { apply(JSON.parse(localStorage.getItem(LS) || "null")); } catch(e){}
+  render();
+
+  document.addEventListener("change", function(e){
+    var t = e.target;
+    if (t.id === "hide-dropped"){ document.body.classList.toggle("hide-dropped", t.checked); }
+    else if (t.type === "checkbox" && t.dataset.i !== undefined){ state.dropped[ROWS[t.dataset.i].id] = !t.checked; changed(); }
+  });
+  document.addEventListener("input", function(e){
+    var t = e.target;
+    if (t.classList.contains("note")){ state.notes[ROWS[t.dataset.i].id] = t.value; changed(); }
+    else if (t.id === "general"){ state.general = t.value; changed(); }
+  });
+  document.addEventListener("click", function(e){
+    var t = e.target;
+    if (t.dataset && t.dataset.bulk){
+      var name = SUBDECKS[t.dataset.s];
+      ROWS.forEach(function(r){ if (r.subdeck === name && (r.group || "") === t.dataset.g) state.dropped[r.id] = t.dataset.bulk === "drop"; });
+      changed();
+    } else if (t.id === "keep-first"){
+      ROWS.forEach(function(r){ state.dropped[r.id] = r.group !== GROUPS[0]; });
+      changed();
+    } else if (t.id === "keep-all" || t.id === "drop-all"){
+      ROWS.forEach(function(r){ state.dropped[r.id] = t.id === "drop-all"; });
+      changed();
+    }
+  });
+
+  var c = window.claude;
+  if (c && c.use){
+    c.use("db").then(function(ns){
+      if (!ns){ saveEl.textContent = LOCAL_ONLY; return; }
+      db = ns;
+      return db.doc(DOC).get().then(function(snap){
+        if (snap.exists && !dirty){ apply(snap.data()); render(); }
+        saveEl.textContent = snap.exists ? "Saved choices loaded." : "Nothing saved yet.";
+        if (dirty) flush();
+      });
+    }).catch(function(){ saveEl.textContent = LOCAL_ONLY; });
+  } else {
+    saveEl.textContent = LOCAL_ONLY;
+  }
+})();
+</script>

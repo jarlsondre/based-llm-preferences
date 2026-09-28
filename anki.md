@@ -22,10 +22,27 @@ it. If no material is found, ask jarl whether any exists.
   Intuition, terminology, and distinctions between similar concepts are welcome
   in every tier. A distinction needs both sides carded first.
 
-- If there are past exams or tests, read them before proposing cards. What they
-  ask about gets cards first, ahead of the order above.
+## 2. Proposing cards
 
-## 2. Writing a card
+Cards are chosen before any card text is written.
+
+- Read first: past exams or tests if there are any, then the material.
+- Propose one row per card: a stable id, one line saying what the card would
+  ask, and how many Anki cards it costs. No question or answer text yet.
+- Each row names its evidence: where the fact appears in the material, and the
+  exam question behind it if there is one. A row absent from the material says
+  so.
+- With past exams, group the rows: asked in an exam, close to an exam question,
+  in no exam. The first group gets cards first, ahead of the priority order.
+- Write the rows to `anki/proposals/<name>.json` in the project's repo, then run
+  `uv run tools/anki_proposal.py` on that file from this repo's clone. It writes
+  a markdown file and a page beside it. The script's header gives the file
+  format.
+- In Claude Code, publish the page and read jarl's choices back from it.
+  Elsewhere, jarl marks rows in the markdown file.
+- Write card text only for the rows jarl kept.
+
+## 3. Writing a card
 
 - One idea per card; almost always answerable, never trivially inferable.
 - Self-contained: understandable in two months with no memory of this chat.
@@ -47,7 +64,7 @@ it. If no material is found, ask jarl whether any exists.
 - A failing card is split into atomic pieces (keep an integrative version); a
   card jarl stopped caring about is deleted.
 
-## 3. Building the deck
+## 4. Building the deck
 
 - `anki/` in the project's repo is the source of truth and where any agent looks
   up existing cards: one JSON file per subdeck, each naming its deck. Every card
