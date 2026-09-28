@@ -4,9 +4,11 @@
 # ///
 """Validate cards and build Anki decks; conventions in anki.md.
 
-Usage: uv run tools/anki.py anki/          # push via AnkiConnect (Anki open)
-       uv run tools/anki.py anki/ --check  # validate only
-       uv run tools/anki.py anki/ --apkg   # write anki/cards.apkg instead
+Usage: uv run tools/anki.py anki/           # push via AnkiConnect (Anki open)
+       uv run tools/anki.py anki/ --check   # validate only
+       uv run tools/anki.py anki/ --approval  # write anki/approval.html
+       uv run tools/anki.py anki/ --apkg    # write anki/cards.apkg instead
+       uv run tools/anki.py --existing DECK # list the cards already in a deck
 
 The directory holds one JSON file per subdeck: {"deck": full deck name,
 "cards": [...]}. Ids are unique across all files. A card is
@@ -18,11 +20,28 @@ step with ids id-1..id-n: earlier steps shown, step k blanked, later steps as
 "hidden" placeholders. All take optional "setting" (definitions the question
 needs) and "extra" (footer for the curious).
 
+"kind" says what sort of answer the card wants, in one or two words. It is
+shown as a plain label at the top right of the card. In math: "definition", "theorem",
+"proposition", "example", "notation", "intuition". Elsewhere: "term",
+"property", "mechanism", "comparison", "command".
+
 Code goes in backticks, inline or as a fenced block. It is escaped and shown
 literally, so cloze markup and math inside code are not interpreted.
 
 The files decide where a card lives: a card whose entry moves to another file
 is moved to that file's deck on the next push.
+
+--approval writes the page where jarl approves cards before a push: the cards
+not pushed yet (--approval-all: every card), with a tick and a note per card.
+--per-day N sets the days estimate (default 4). The page also shows these
+optional fields, which a push ignores: "topic" (a heading inside the subdeck),
+"where" (the place in the material), and together "asked" ("directly" or
+"indirectly") with "exam" (the past exam or test question). A card with neither
+counts as never asked.
+
+"adopt": Anki note id, on a card, converts that existing note to the shared
+note type on the next push, keeping its review history. Only after jarl said
+yes to converting it.
 
 pushed.json in the directory records pushed ids: an id pushed before but now
 missing from Anki was deleted by jarl in review and is never re-added.
@@ -48,7 +67,7 @@ CSS = """.card {
   max-width: 720px; margin: 0 auto; padding: 24px 20px;
 }
 .setting {
-  font-size: 16px; line-height: 1.5; opacity: .78; margin-bottom: 16px;
+  font-size: 16px; line-height: 1.5; opacity: .78; margin-top: 18px;
   padding: 8px 14px; border-left: 3px solid rgba(128,128,128,.55);
   background: rgba(128,128,128,.10); border-radius: 0 8px 8px 0;
 }
@@ -79,15 +98,20 @@ pre {
   border-radius: 8px; background: rgba(128,128,128,.12);
 }
 pre code { padding: 0; background: none; font-size: .85em; }
+.kind {
+  display: block; margin: -10px 0 4px; text-align: right; font-size: 12px;
+  font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+  opacity: .8;
+}
 mjx-container[display="true"] { margin: 10px 0 !important; }
 """
 SETTING = '{{#Setting}}<div class="setting">{{Setting}}</div>{{/Setting}}'
 FOOTER = (
     '{{#Extra}}<div class="extra">{{Extra}}</div>{{/Extra}}<div class="id">{{Id}}</div>'
 )
-BASIC_FRONT = SETTING + '<div class="q">{{Front}}</div>'
+BASIC_FRONT = '<div class="q">{{Front}}</div>' + SETTING
 BASIC_BACK = '{{FrontSide}}<hr id="answer">{{Back}}' + FOOTER
-CLOZE_FRONT = SETTING + "{{cloze:Text}}"
+CLOZE_FRONT = "{{cloze:Text}}" + SETTING
 CLOZE_BACK = CLOZE_FRONT + FOOTER
 FIELDS = {
     "jarl-basic": ["Id", "Setting", "Front", "Back", "Extra"],
@@ -106,6 +130,35 @@ YES_NO = re.compile(
 BARE_DOLLAR = re.compile(r"(?<!\\)\$")
 FENCED = re.compile(r"```[\w-]*\n?(.*?)```", re.DOTALL)
 INLINE = re.compile(r"`([^`\n]+)`")
+TAGS = re.compile(r"<[^>]+>")
+CLOZE = re.compile(r"\{\{c\d+::(.*?)(?:::[^}]*)?\}\}", re.DOTALL)
+APPROVAL_PAGE = Path(__file__).with_name("anki_approval.html")
+PAGE_KEYS = (
+    "id",
+    "type",
+    "setting",
+    "intro",
+    "steps",
+    "front",
+    "back",
+    "extra",
+    "topic",
+    "kind",
+    "where",
+    "asked",
+    "exam",
+)
+
+
+def check_evidence(cards: list[dict[str, Any]]) -> list[str]:
+    errors = []
+    for card in cards:
+        asked = card.get("asked")
+        if asked is not None and asked not in ("directly", "indirectly"):
+            errors.append(f'{label(card)}: asked must be "directly" or "indirectly"')
+        if (asked is None) != ("exam" not in card):
+            errors.append(f"{label(card)}: asked and exam go together")
+    return errors
 
 
 def escape_code(code: str) -> str:
@@ -159,6 +212,9 @@ def expand_steps(
         if "id" not in card or not isinstance(steps, list) or len(steps) < 2:
             errors.append(f"{label(card)}: steps card needs an id and at least 2 steps")
             continue
+        if "adopt" in card:
+            errors.append(f"{label(card)}: a steps card cannot adopt an existing card")
+            continue
         if any("{{c" in step for step in steps):
             errors.append(
                 f"{label(card)}: steps must not contain cloze markup; the tool adds it"
@@ -175,6 +231,7 @@ def expand_steps(
                     "text": card.get("intro", "") + "<ol>" + "".join(items) + "</ol>",
                     "setting": card.get("setting", ""),
                     "extra": card.get("extra", ""),
+                    "kind": card.get("kind", ""),
                     "deck": card["deck"],
                     "file": card["file"],
                 }
@@ -207,6 +264,10 @@ def validate(cards: list[dict[str, Any]]) -> list[str]:
             errors.append(
                 f"{label(card)}: yes/no question; rephrase open-ended (anki.md)"
             )
+        if not isinstance(card.get("kind", ""), str):
+            errors.append(f'{label(card)}: kind must be text, such as "definition"')
+        if "adopt" in card and not isinstance(card["adopt"], int):
+            errors.append(f"{label(card)}: adopt must be the Anki note id, a number")
         if any(BARE_DOLLAR.search(str(card.get(key, ""))) for key in CONTENT):
             errors.append(
                 rf"{label(card)}: bare $ outside code; math is MathJax \(...\),"
@@ -225,9 +286,11 @@ def fields_for(card: dict[str, Any]) -> dict[str, str]:
         "Setting": card.get("setting", ""),
         "Extra": card.get("extra", ""),
     }
+    kind = card.get("kind", "").strip()
+    shown = f'<div class="kind">{html.escape(kind)}</div>' if kind else ""
     if card.get("type") == "cloze":
-        return common | {"Text": card["text"]}
-    return common | {"Front": card["front"], "Back": card["back"]}
+        return common | {"Text": shown + card["text"]}
+    return common | {"Front": shown + card["front"], "Back": card["back"]}
 
 
 def invoke(action: str, **params: object) -> Any:  # AnkiConnect returns arbitrary JSON
@@ -280,14 +343,34 @@ def move_to_decks(targets: dict[str, list[int]]) -> int:
     return moved
 
 
+def adopt(card: dict[str, Any]) -> None:
+    """Convert a card made outside the files to the shared note type, in place."""
+    info = invoke("notesInfo", notes=[card["adopt"]])
+    if not info or not info[0].get("noteId"):
+        sys.exit(f"anki.py: {label(card)}: no Anki note {card['adopt']} to adopt")
+    invoke(
+        "updateNoteModel",
+        note={
+            "id": card["adopt"],
+            "modelName": model_for(card),
+            "fields": fields_for(card),
+            "tags": info[0].get("tags", []),
+        },
+    )
+
+
+def read_pushed(pushed_path: Path) -> set[str]:
+    return set(json.loads(pushed_path.read_text())) if pushed_path.exists() else set()
+
+
 def push(cards: list[dict[str, Any]], pushed_path: Path) -> None:
-    pushed = set(json.loads(pushed_path.read_text())) if pushed_path.exists() else set()
+    pushed = read_pushed(pushed_path)
     decks = sorted({card["deck"] for card in cards})
     for deck in decks:
         invoke("createDeck", deck=deck)
     for name in FIELDS:
         sync_note_type(name)
-    added, updated, skipped = [], [], []
+    added, updated, skipped, adopted = [], [], [], []
     existing: dict[str, list[int]] = {}
     for card in cards:
         cid = card["id"]
@@ -300,6 +383,10 @@ def push(cards: list[dict[str, Any]], pushed_path: Path) -> None:
             existing.setdefault(card["deck"], []).append(note_ids[0])
         elif cid in pushed:
             skipped.append(cid)
+        elif "adopt" in card:
+            adopt(card)
+            adopted.append(cid)
+            existing.setdefault(card["deck"], []).append(card["adopt"])
         else:
             invoke(
                 "addNote",
@@ -311,11 +398,14 @@ def push(cards: list[dict[str, Any]], pushed_path: Path) -> None:
             )
             added.append(cid)
     moved = move_to_decks(existing)
-    pushed |= set(added) | set(updated)
+    pushed |= set(added) | set(updated) | set(adopted)
     pushed_path.write_text(json.dumps(sorted(pushed)) + "\n")
     print(
-        f"{len(decks)} decks: added {len(added)}, updated {len(updated)}, moved {moved}"
+        f"{len(decks)} decks: added {len(added)}, updated {len(updated)}, "
+        f"converted {len(adopted)}, moved {moved}"
     )
+    if adopted:
+        print("converted cards changed note type: Anki asks for a one-way sync once")
     if skipped:
         print(
             "deleted in review, not re-added; remove from the card files: "
@@ -361,19 +451,110 @@ def write_apkg(cards: list[dict[str, Any]], out: Path) -> None:
     print(f"wrote {out} ({len(decks)} decks, {len(cards)} cards)")
 
 
+def plain(value: str, limit: int) -> str:
+    text = " ".join(html.unescape(TAGS.sub(" ", value)).split())
+    return text if len(text) <= limit else text[: limit - 1] + "…"
+
+
+def list_existing(deck: str) -> None:
+    """Print the cards already in a deck, so new cards do not repeat them."""
+    note_ids = invoke("findNotes", query=f'"deck:{deck}"')
+    notes = invoke("notesInfo", notes=note_ids) if note_ids else []
+    outside = 0
+    for note in notes:
+        ordered = sorted(note["fields"].items(), key=lambda item: item[1]["order"])
+        values = {name: field["value"] for name, field in ordered}
+        managed = note["modelName"] in FIELDS and values.get("Id")
+        outside += not managed
+        skipped = ("Id", "Setting", "Extra") if managed else ()
+        shown = [v for name, v in values.items() if name not in skipped and v.strip()]
+        question = plain(shown[0], 140) if shown else ""
+        answer = plain(shown[1], 100) if len(shown) > 1 else ""
+        print(
+            f"{note['noteId']}  {managed or 'NOT IN FILES'}  [{note['modelName']}]"
+            f"  {question}  =>  {answer}"
+        )
+    print(f"{deck}: {len(notes)} cards, {outside} not in the card files")
+
+
+def page_title(cards: list[dict[str, Any]]) -> tuple[str, str]:
+    """Name the page after the part of the deck path all cards share."""
+    paths = [card["deck"].split("::") for card in cards]
+    shared = []
+    for level in zip(*paths, strict=False):
+        if len(set(level)) > 1:
+            break
+        shared.append(level[0])
+    one_deck = len(shared) == len(paths[0]) and len(shared) > 1
+    name = shared[-2] if one_deck else shared[-1] if shared else "Anki"
+    return f"{name} Card Approval", " / ".join(shared)
+
+
+def write_approval(
+    cards: list[dict[str, Any]], pushed: set[str], out: Path, per_day: int, full: bool
+) -> None:
+    """Write the page where jarl reads, ticks and comments on cards before a push."""
+    rows = []
+    for card in cards:
+        steps = card["steps"] if card.get("type") == "steps" else []
+        ids = [f"{card['id']}-{k + 1}" for k in range(len(steps))] or [card["id"]]
+        if not full and all(cid in pushed for cid in ids):
+            continue
+        row = {key: card[key] for key in PAGE_KEYS if key in card}
+        if card.get("type") == "cloze":
+            row["text"] = CLOZE.sub(r'<span class="cloze">\1</span>', card["text"])
+        row |= {
+            "subdeck": card["deck"].split("::")[-1],
+            "inAnki": "adopt" in card,
+            "cards": len(ids),
+        }
+        rows.append(row)
+    if not rows:
+        sys.exit(
+            "anki.py: nothing to approve, every card is in Anki; try --approval-all"
+        )
+    title, subtitle = page_title(cards)
+    data = {"subtitle": subtitle, "per_day": per_day, "rows": rows}
+    # "<" escaped so card text cannot close the script tag holding the data.
+    payload = json.dumps(data, ensure_ascii=False).replace("<", "\\u003c")
+    page = APPROVAL_PAGE.read_text().replace("__TITLE__", html.escape(title))
+    out.write_text(page.replace("__DATA__", payload))
+    print(f"wrote {out}: {len(rows)} entries, {sum(r['cards'] for r in rows)} cards")
+    print(
+        'Claude Code: publish it with the Artifact tool, capabilities {"db": {}}; read'
+        ' jarl\'s choices from collection "approval", document "cards".'
+    )
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("cards_dir", type=Path)
+    ap.add_argument("cards_dir", type=Path, nargs="?")
     ap.add_argument("--check", action="store_true")
     ap.add_argument("--apkg", action="store_true")
+    ap.add_argument("--approval", action="store_true")
+    ap.add_argument("--approval-all", action="store_true")
+    ap.add_argument("--per-day", type=int, default=4)
+    ap.add_argument("--existing", metavar="DECK")
     args = ap.parse_args()
-    if not args.cards_dir.is_dir():
-        sys.exit(f"anki.py: {args.cards_dir} is not a directory; pass the anki/ folder")
-    cards, errors = expand_steps(load(args.cards_dir))
-    errors += validate(cards)
+    if args.existing:
+        list_existing(args.existing)
+        return
+    if args.cards_dir is None or not args.cards_dir.is_dir():
+        sys.exit(f"anki.py: pass the anki/ folder; got {args.cards_dir}")
+    written = load(args.cards_dir)
+    cards, errors = expand_steps(written)
+    errors += validate(cards) + check_evidence(written)
     if errors:
         sys.exit("anki.py: invalid cards:\n" + "\n".join(errors))
-    if args.check:
+    if args.approval or args.approval_all:
+        write_approval(
+            written,
+            read_pushed(args.cards_dir / PUSHED),
+            args.cards_dir / "approval.html",
+            args.per_day,
+            args.approval_all,
+        )
+    elif args.check:
         print(f"{len(cards)} cards valid")
     elif args.apkg:
         write_apkg(cards, args.cards_dir / "cards.apkg")

@@ -4,7 +4,8 @@ Flashcards for anything jarl studies. Distilled from Nielsen and Matuschak
 (links at the bottom); fetch a source only when this file cannot answer.
 
 Material jarl provides is the notation source and the arbiter when unsure; match
-it. If no material is found, ask jarl whether any exists.
+it. Notation jarl states wins over the material; record it in the project's
+convention file. If no material is found, ask jarl whether any exists.
 
 ## 1. Which cards exist
 
@@ -22,33 +23,42 @@ it. If no material is found, ask jarl whether any exists.
   Intuition, terminology, and distinctions between similar concepts are welcome
   in every tier. A distinction needs both sides carded first.
 
-## 2. Proposing cards
+## 2. Approving new cards
 
-Cards are chosen before any card text is written.
+jarl reads and approves every card before it goes into Anki.
 
-- Read first: past exams or tests if there are any, then the material.
-- Propose one row per card: a stable id, one line saying what the card would
-  ask, and how many Anki cards it costs. No question or answer text yet.
-- Each row names its evidence: where the fact appears in the material, and the
-  exam question behind it if there is one. A row absent from the material says
-  so.
-- With past exams, group the rows: asked in an exam, close to an exam question,
-  in no exam. The first group gets cards first, ahead of the priority order.
-- Write the rows to `anki/proposals/<name>.json` in the project's repo, then run
-  `uv run tools/anki_proposal.py` on that file from this repo's clone. It writes
-  a markdown file and a page beside it. The script's header gives the file
-  format.
-- In Claude Code, publish the page and read jarl's choices back from it.
-  Elsewhere, jarl marks rows in the markdown file.
-- Write card text only for the rows jarl kept.
+- Ask which parts of the material jarl has covered, and write cards only for
+  those. Read past exams or tests first if there are any, then the material.
+- List the cards already in the target deck with
+  `uv run tools/anki.py --existing <deck>`, and write no card that one of them
+  covers.
+- For cards made outside the card files, ask jarl whether to convert them to the
+  shared card style. Never convert unasked. After a yes, the card goes into the
+  files with `adopt`, and Anki asks for a one-way sync once. After a no, the
+  card stays as it is.
+- Give each card its evidence: `where` it appears in the material and, with past
+  exams, `asked` (directly or indirectly) plus the `exam` question. Cards asked
+  directly come first, ahead of the priority order.
+- Build the page with `uv run tools/anki.py anki/ --approval` from this repo's
+  clone. In Claude Code, publish it and read jarl's choices back from it.
+  Elsewhere, jarl opens the file in a browser and pastes its text box back.
+- Remove the cards jarl dropped. A note on one card applies to every card of
+  that kind: check all cards against each note, and report what changed.
 
 ## 3. Writing a card
 
-- One idea per card; almost always answerable, never trivially inferable.
+- One idea per card, and one ask: "what is X, and why?" is two. Almost always
+  answerable, never trivially inferable.
 - Self-contained: understandable in two months with no memory of this chat.
   Everything the question uses is defined on the card; nothing else is. Example:
   for \(\partial x^T A x / \partial x\), define "x in R^n, A in R^{n by n}
-  symmetric"; also defining \(f(x) = x^T A x\) is unused and gets cut.
+  symmetric"; also defining \(f(x) = x^T A x\) is unused and gets cut. It uses
+  no term or symbol jarl has not met yet.
+- Every card names its `kind`: the sort of answer it wants, such as definition
+  or theorem. Anki shows it at the top right of the card. The tool's header
+  lists examples.
+- Card the general fact, never a specific exercise, which gets answered by rote.
+  An example can go in the footer.
 - Same answer every time: enough context to exclude alternative answers, no
   more. Short questions, no yes/no questions.
 - Ordered material is one card per step: written once as a `"type": "steps"`

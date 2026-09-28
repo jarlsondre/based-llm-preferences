@@ -1,0 +1,318 @@
+<title>__TITLE__</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --ground:#f2f5f4; --surface:#ffffff; --ink:#18211f; --muted:#5a6966; --line:#d3dbd8;
+  --accent:#0f6b5c; --accent-ink:#ffffff;
+  --new:#0f6b5c; --new-bg:#dcefea; --old:#5b4b8a; --old-bg:#e7e2f3; --kind:#8a5a00; --kind-bg:#f6ead2;
+  --exam:#a4371f; --exam-bg:#f8e3dd; --answer-bg:#f7f9f8; --code-bg:#e9eeec; --dropped:#8b9794;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --ground:#121716; --surface:#1b2221; --ink:#e4ebe8; --muted:#9aa8a4; --line:#2f3a38;
+    --accent:#4fc3a8; --accent-ink:#0c1614;
+    --new:#5fd0b6; --new-bg:#15342e; --old:#b3a3e6; --old-bg:#2a2344; --kind:#e0b052; --kind-bg:#38290c;
+    --exam:#f09077; --exam-bg:#3d1c14; --answer-bg:#161c1b; --code-bg:#252e2c; --dropped:#66726f;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --ground:#121716; --surface:#1b2221; --ink:#e4ebe8; --muted:#9aa8a4; --line:#2f3a38;
+  --accent:#4fc3a8; --accent-ink:#0c1614;
+  --new:#5fd0b6; --new-bg:#15342e; --old:#b3a3e6; --old-bg:#2a2344; --kind:#e0b052; --kind-bg:#38290c;
+  --exam:#f09077; --exam-bg:#3d1c14; --answer-bg:#161c1b; --code-bg:#252e2c; --dropped:#66726f;
+}
+*{box-sizing:border-box}
+body{background:var(--ground);color:var(--ink);font-family:"IBM Plex Sans",-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:15px;line-height:1.5}
+.wrap{max-width:980px;margin:0 auto;padding-inline:20px;padding-block:28px 64px;display:flex;flex-direction:column;gap:28px}
+h1{font-family:"IBM Plex Sans Condensed","IBM Plex Sans",Arial,sans-serif;font-weight:600;font-size:30px;line-height:1.15;margin:0;text-wrap:balance}
+h2{font-family:"IBM Plex Sans Condensed","IBM Plex Sans",Arial,sans-serif;font-weight:600;font-size:22px;margin:0;text-wrap:balance}
+h3{font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0}
+p{margin:0;max-width:68ch}
+.lede{color:var(--muted)}
+header.top{display:flex;flex-direction:column;gap:10px}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:13.5px;color:var(--muted)}
+.legend span{display:inline-flex;gap:7px;align-items:baseline}
+.tag{display:inline-block;font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-size:12px;font-weight:500;padding:1px 7px;border-radius:3px;white-space:nowrap}
+.tag.new{color:var(--new);background:var(--new-bg)} .tag.old{color:var(--old);background:var(--old-bg)}
+.tag.kind{color:var(--kind);background:var(--kind-bg)}
+.tag.directly{color:var(--exam);background:var(--exam-bg);white-space:normal}
+.tag.indirectly{color:var(--kind);background:var(--kind-bg);white-space:normal}
+.tag.never{color:var(--muted);background:var(--code-bg)}
+.tag.what{color:var(--ink);background:transparent;border:1px solid var(--line);text-transform:uppercase;letter-spacing:.06em;font-size:11px}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:12px 16px;display:flex;flex-wrap:wrap;gap:12px 28px;align-items:center}
+.stat{display:flex;flex-direction:column}
+.stat b{font-size:24px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.1}
+.stat small{font-size:12px;color:var(--muted)}
+.stat.new b{color:var(--new)} .stat.old b{color:var(--old)}
+.stat.directly b{color:var(--exam)} .stat.indirectly b{color:var(--kind)} .stat.never b{color:var(--muted)}
+.save{margin-left:auto;font-size:12.5px;color:var(--muted);text-align:right}
+.controls{display:flex;flex-wrap:wrap;gap:8px 20px;align-items:center}
+.controls label{font-size:13.5px;display:inline-flex;gap:6px;align-items:center;cursor:pointer}
+button{font:inherit;font-size:13px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:4px 10px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#sections{display:flex;flex-direction:column;gap:36px}
+section.group{display:flex;flex-direction:column;gap:12px}
+.group-head{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:baseline;border-bottom:2px solid var(--ink);padding-bottom:6px}
+.group-head .count{color:var(--muted);font-size:13.5px;font-variant-numeric:tabular-nums}
+.group-head .spacer{flex:1}
+.entries{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:6px}
+.entry{display:grid;grid-template-columns:34px minmax(0,1fr);gap:4px 10px;padding:14px 16px;border-bottom:1px solid var(--line)}
+.entry:last-child{border-bottom:0}
+.entry .keep{padding-top:2px}
+input[type=checkbox]{width:17px;height:17px;accent-color:var(--accent);cursor:pointer}
+.main{display:flex;flex-direction:column;gap:9px;min-width:0}
+.meta{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:baseline}
+.meta .id{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-size:13px;font-weight:500;color:var(--ink);overflow-wrap:anywhere;user-select:all}
+.meta .where{font-size:13px;color:var(--muted)}
+.part{display:grid;grid-template-columns:74px minmax(0,1fr);gap:4px 12px;align-items:baseline}
+.part>b{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.part .text{min-width:0;overflow-x:auto;overflow-y:hidden;max-width:72ch}
+.part.setting .text,.part.extra .text{color:var(--muted);font-size:14px}
+.part.q .text{font-weight:500}
+.part.a .text{background:var(--answer-bg);border-left:2px solid var(--accent);padding:6px 12px}
+.text ul,.text ol{margin:0;padding-left:22px}
+.text li{margin:3px 0}
+.text .cloze{font-weight:600;color:var(--accent);border-bottom:1px dashed var(--accent)}
+.text code{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-size:.88em;font-weight:400;padding:1px 5px;border-radius:4px;background:var(--code-bg)}
+.text pre{margin:6px 0;padding:8px 12px;overflow-x:auto;line-height:1.4;border-radius:6px;background:var(--code-bg)}
+.text pre code{padding:0;background:none}
+input.note{width:100%;max-width:72ch;font:inherit;font-size:13px;color:var(--ink);background:transparent;border:0;border-bottom:1px dashed var(--line);padding:2px 0}
+.entry.dropped .main,.entry.dropped .meta .id,.entry.dropped .part .text{color:var(--dropped)}
+.entry.dropped .meta .id{text-decoration:line-through}
+.entry.dropped .part.a .text{border-left-color:var(--line)}
+.entry.dropped .tag{opacity:.55}
+body.hide-dropped .entry.dropped{display:none}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+.panel label{font-size:13.5px;color:var(--muted)}
+textarea{width:100%;font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-size:12.5px;color:var(--ink);background:var(--ground);border:1px solid var(--line);border-radius:4px;padding:10px;resize:vertical}
+@media (max-width:560px){
+  .bar{gap:8px 16px;padding:8px 12px}.save{margin-left:0;text-align:left}.stat b{font-size:18px}.stat small{font-size:11px}
+  .part{grid-template-columns:minmax(0,1fr)}
+  .entry{padding:12px}
+}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <h3 id="subtitle"></h3>
+    <h1>Cards to approve before they go into Anki</h1>
+    <p class="lede">Untick a card to drop it, and leave a note on any card whose wording should change. A note on one card is applied to every card of that kind. Your ticks and notes are saved as you go.</p>
+    <div class="legend" id="legend"></div>
+  </header>
+
+  <div class="bar" id="bar"></div>
+
+  <div class="controls" id="controls"></div>
+
+  <div id="sections"></div>
+
+  <section class="panel">
+    <h2>Your decisions as text</h2>
+    <p class="lede">Claude reads the saved choices directly. This box holds the same information, in case you would rather paste it.</p>
+    <textarea id="summary" rows="6" readonly aria-label="Your decisions as text"></textarea>
+    <label for="general">Anything else Claude should know</label>
+    <textarea id="general" rows="3"></textarea>
+  </section>
+</div>
+
+<script id="data" type="application/json">__DATA__</script>
+<script>
+window.MathJax = {tex:{inlineMath:[["\\(","\\)"]],displayMath:[["\\[","\\]"]]},svg:{fontCache:"global"}};
+(function(){
+  var DATA = JSON.parse(document.getElementById("data").textContent);
+  var ROWS = DATA.rows, PER_DAY = DATA.per_day, DOC = "approval/cards", LS = "anki-approval";
+  var GROUPS = [], SUBDECKS = [];
+  ROWS.forEach(function(r){
+    r.section = r.subdeck + (r.topic ? "\u0000" + r.topic : "");
+    if (GROUPS.indexOf(r.section) < 0) GROUPS.push(r.section);
+    if (SUBDECKS.indexOf(r.subdeck) < 0) SUBDECKS.push(r.subdeck);
+  });
+  var TOTAL = ROWS.reduce(function(n, r){ return n + r.cards; }, 0);
+  var HAS_OLD = ROWS.some(function(r){ return r.inAnki; });
+  var HAS_EXAM = ROWS.some(function(r){ return !!r.asked; });
+  var ASKED = ["directly", "indirectly", "never"];
+  var ASKED_LABEL = {directly:"asked in an exam", indirectly:"close to an exam question", never:"in no exam"};
+  ROWS.forEach(function(r){ r.asked = r.asked || "never"; });
+  var state = {dropped:{}, notes:{}, general:""};
+  var db = null, saving = false, dirty = false, timer = null, latest = null, saveEl = null;
+  var LOCAL_ONLY = "Saved in this browser only. Paste the text box to Claude.";
+  function $(id){ return document.getElementById(id); }
+  function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
+  function days(n){ return Math.ceil(n / PER_DAY); }
+
+  function part(cls, label, html){
+    return '<div class="part ' + cls + '"><b>' + label + '</b><div class="text">' + html + '</div></div>';
+  }
+  function card(r){
+    var html = "", setting = r.setting ? part("setting", "Setting", r.setting) : "";
+    if (r.type === "steps"){
+      html += part("q", "Claim", r.intro || "") + setting;
+      html += part("a", "Steps", "<ol>" + r.steps.map(function(s){ return "<li>" + s + "</li>"; }).join("") + "</ol>");
+    } else if (r.type === "cloze"){
+      html += part("q", "Text", r.text) + setting;
+    } else {
+      html += part("q", "Question", r.front) + setting;
+      html += part("a", "Answer", r.back);
+    }
+    if (r.extra) html += part("extra", "Note", r.extra);
+    return html;
+  }
+  function tags(r){
+    var html = '<span class="tag ' + (r.inAnki ? 'old">in Anki' : 'new">new') + '</span>';
+    if (r.kind) html += '<span class="tag what">' + esc(r.kind) + '</span>';
+    if (r.type === "steps") html += '<span class="tag kind">steps · ' + r.cards + ' cards</span>';
+    if (r.type === "cloze") html += '<span class="tag kind">blank</span>';
+    if (HAS_EXAM) html += '<span class="tag ' + r.asked + '">' + ASKED_LABEL[r.asked] + (r.exam ? ': ' + esc(r.exam) : '') + '</span>';
+    if (r.where) html += '<span class="where">' + esc(r.where) + '</span>';
+    return html;
+  }
+
+  function buildChrome(){
+    $("subtitle").textContent = DATA.subtitle;
+    var legend = '<span><span class="tag new">new</span> not in Anki yet</span>';
+    if (HAS_OLD) legend += '<span><span class="tag old">in Anki</span> an existing card, to be converted to the shared format</span>';
+    legend += '<span><span class="tag kind">steps</span> one Anki card per step</span>';
+    $("legend").innerHTML = legend;
+    var bar = '<div class="stat"><b id="s-total">0</b><small>cards kept of ' + TOTAL + '</small></div>' +
+      '<div class="stat new"><b id="s-new">0</b><small>new</small></div>';
+    if (HAS_OLD) bar += '<div class="stat old"><b id="s-old">0</b><small>already in Anki</small></div>';
+    if (HAS_EXAM) ASKED.forEach(function(a){
+      bar += '<div class="stat ' + a + '"><b id="s-' + a + '">0</b><small>' + ASKED_LABEL[a] + '</small></div>';
+    });
+    bar += '<div class="stat"><b id="s-days">0</b><small>days for the largest subdeck, at ' + PER_DAY + ' new a day</small></div>' +
+      '<div class="save" id="save">Loading saved choices</div>';
+    $("bar").innerHTML = bar;
+    saveEl = $("save");
+    var controls = '<button type="button" id="keep-all">Keep everything</button><button type="button" id="drop-all">Drop everything</button>';
+    if (HAS_EXAM) controls += '<button type="button" id="keep-directly">Keep only asked in an exam</button>' +
+      '<button type="button" id="keep-seen">Keep asked or close to a question</button>';
+    controls += '<label><input type="checkbox" id="hide-dropped"> Hide dropped cards</label>';
+    $("controls").innerHTML = controls;
+  }
+  function buildSections(){
+    var html = "";
+    GROUPS.forEach(function(key, gi){
+      var names = key.split("\u0000");
+      html += '<section class="group"><div class="group-head"><h2>' + esc(names[1] || names[0]) + '</h2>' +
+        (names[1] ? '<span class="count">' + esc(names[0]) + '</span>' : '') +
+        '<span class="count" id="gc-' + gi + '"></span><span class="spacer"></span>' +
+        '<button type="button" data-bulk="keep" data-g="' + gi + '">Keep all</button>' +
+        '<button type="button" data-bulk="drop" data-g="' + gi + '">Drop all</button></div><div class="entries">';
+      ROWS.forEach(function(r, i){
+        if (r.section !== key) return;
+        html += '<div class="entry" id="r-' + i + '"><div class="keep"><input type="checkbox" id="k-' + i + '" data-i="' + i + '" aria-label="Keep ' + esc(r.id) + '" checked></div><div class="main">' +
+          '<div class="meta"><span class="id">' + esc(r.id) + '</span>' + tags(r) + '</div>' + card(r) +
+          '<input class="note" id="n-' + i + '" data-i="' + i + '" type="text" aria-label="Your note for ' + esc(r.id) + '" placeholder="your note on this card"></div></div>';
+      });
+      html += '</div></section>';
+    });
+    $("sections").innerHTML = html;
+  }
+  function render(){
+    var total = 0, fresh = 0, old = 0, asked = {directly:0, indirectly:0, never:0};
+    var per = GROUPS.map(function(){ return {kept:0, all:0}; }), decks = SUBDECKS.map(function(){ return 0; });
+    ROWS.forEach(function(r, i){
+      var drop = !!state.dropped[r.id], g = per[GROUPS.indexOf(r.section)];
+      $("r-" + i).classList.toggle("dropped", drop);
+      $("k-" + i).checked = !drop;
+      var note = $("n-" + i);
+      if (document.activeElement !== note) note.value = state.notes[r.id] || "";
+      g.all += r.cards;
+      if (drop) return;
+      g.kept += r.cards; total += r.cards; asked[r.asked] += r.cards;
+      if (r.inAnki) old += r.cards; else { fresh += r.cards; decks[SUBDECKS.indexOf(r.subdeck)] += r.cards; }
+    });
+    $("s-total").textContent = total; $("s-new").textContent = fresh;
+    if (HAS_OLD) $("s-old").textContent = old;
+    if (HAS_EXAM) ASKED.forEach(function(a){ $("s-" + a).textContent = asked[a]; });
+    $("s-days").textContent = days(Math.max.apply(null, decks));
+    per.forEach(function(g, gi){ $("gc-" + gi).textContent = g.kept + " of " + g.all + " cards kept"; });
+    var general = $("general");
+    if (document.activeElement !== general) general.value = state.general || "";
+    var dropped = ROWS.filter(function(r){ return state.dropped[r.id]; });
+    var lines = ["Kept " + total + " cards, dropped " + dropped.length + " entries."];
+    if (dropped.length) lines.push("Dropped: " + dropped.map(function(r){ return r.id; }).join(", "));
+    ROWS.forEach(function(r){ if (state.notes[r.id]) lines.push("Note " + r.id + ": " + state.notes[r.id]); });
+    if (state.general) lines.push("General: " + state.general);
+    $("summary").value = lines.join("\n");
+    return total;
+  }
+  function body(total){
+    var notes = {};
+    ROWS.forEach(function(r){ if (state.notes[r.id]) notes[r.id] = state.notes[r.id]; });
+    return {dropped:ROWS.filter(function(r){ return state.dropped[r.id]; }).map(function(r){ return r.id; }), notes:notes,
+            general:state.general, keptCards:total, savedAt:new Date().toISOString()};
+  }
+  function apply(d){
+    if (!d) return;
+    state.dropped = {}; (d.dropped || []).forEach(function(id){ state.dropped[id] = true; });
+    state.notes = d.notes || {}; state.general = d.general || "";
+  }
+  function changed(){
+    latest = body(render()); dirty = true;
+    try { localStorage.setItem(LS, JSON.stringify(latest)); } catch(e){}
+    clearTimeout(timer); timer = setTimeout(flush, 700);
+    saveEl.textContent = "Saving";
+  }
+  function flush(){
+    if (!db){ saveEl.textContent = LOCAL_ONLY; dirty = false; return; }
+    if (saving || !dirty) return;
+    saving = true; dirty = false;
+    db.doc(DOC).set(latest).then(function(){
+      saving = false; saveEl.textContent = "Saved. Claude can read these choices.";
+      if (dirty) flush();
+    }, function(){
+      saving = false; saveEl.textContent = "Could not save online. Kept in this browser; paste the text box to Claude.";
+    });
+  }
+
+  buildChrome();
+  buildSections();
+  try { apply(JSON.parse(localStorage.getItem(LS) || "null")); } catch(e){}
+  render();
+
+  document.addEventListener("change", function(e){
+    var t = e.target;
+    if (t.id === "hide-dropped"){ document.body.classList.toggle("hide-dropped", t.checked); }
+    else if (t.type === "checkbox" && t.dataset.i !== undefined){ state.dropped[ROWS[t.dataset.i].id] = !t.checked; changed(); }
+  });
+  document.addEventListener("input", function(e){
+    var t = e.target;
+    if (t.classList.contains("note")){ state.notes[ROWS[t.dataset.i].id] = t.value; changed(); }
+    else if (t.id === "general"){ state.general = t.value; changed(); }
+  });
+  document.addEventListener("click", function(e){
+    var t = e.target;
+    if (t.dataset && t.dataset.bulk){
+      var key = GROUPS[t.dataset.g];
+      ROWS.forEach(function(r){ if (r.section === key) state.dropped[r.id] = t.dataset.bulk === "drop"; });
+      changed();
+    } else if (t.id === "keep-all" || t.id === "drop-all"){
+      ROWS.forEach(function(r){ state.dropped[r.id] = t.id === "drop-all"; });
+      changed();
+    } else if (t.id === "keep-directly" || t.id === "keep-seen"){
+      ROWS.forEach(function(r){ state.dropped[r.id] = r.asked === "never" || (t.id === "keep-directly" && r.asked !== "directly"); });
+      changed();
+    }
+  });
+
+  var c = window.claude;
+  if (c && c.use){
+    c.use("db").then(function(ns){
+      if (!ns){ saveEl.textContent = LOCAL_ONLY; return; }
+      db = ns;
+      return db.doc(DOC).get().then(function(snap){
+        if (snap.exists && !dirty){ apply(snap.data()); render(); }
+        saveEl.textContent = snap.exists ? "Saved choices loaded." : "Nothing saved yet.";
+        if (dirty) flush();
+      });
+    }).catch(function(){ saveEl.textContent = LOCAL_ONLY; });
+  } else {
+    saveEl.textContent = LOCAL_ONLY;
+  }
+})();
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg-full.min.js"></script>
