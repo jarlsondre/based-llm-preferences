@@ -28,3 +28,7 @@ Where the rules came from. Bookkeeping for jarl; not for models to read.
   answer rule keeps the explanation escape hatch.
 - Contrastive Chain-of-Thought (https://arxiv.org/abs/2311.09277): why
   language.md teaches with don't/do pairs, kept few.
+- Nielsen, "Augmenting Long-term Memory"
+  (https://augmentingcognition.com/ltm.html): distilled into anki.md.
+- Matuschak, "How to write good prompts" (https://andymatuschak.org/prompts):
+  distilled into anki.md, with jarl's own conventions.

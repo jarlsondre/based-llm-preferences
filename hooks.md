@@ -113,7 +113,7 @@ Merge into `.claude/settings.json`:
         "hooks": [
           {
             "type": "command",
-            "command": "command -v jq >/dev/null || { echo 'hook: jq missing; install a static jq binary into ~/.local/bin (no sudo needed)' >&2; exit 2; }; f=$(jq -r '.tool_input.file_path // empty'); case \"$f\" in *.md) d=$(cd \"$(dirname \"$f\")\" && pwd); cfg=\"\"; while :; do { [ -e \"$d/.vale.ini\" ] || [ -L \"$d/.vale.ini\" ]; } && { cfg=\"$d/.vale.ini\"; break; }; [ \"$d\" = \"/\" ] && break; d=$(dirname \"$d\"); done; [ -n \"$cfg\" ] || { echo 'hook: no Vale config found; run setup.md from the preferences repo' >&2; exit 2; }; command -v vale >/dev/null || { echo 'hook: vale missing; install per language.md section 4' >&2; exit 2; }; out=$(vale --config \"$cfg\" --output line \"$f\" 2>&1) || { printf '%s\\n' \"$out\" >&2; exit 2; } ;; esac"
+            "command": "command -v jq >/dev/null || { echo 'hook: jq missing; install a static jq binary into ~/.local/bin (no sudo needed)' >&2; exit 2; }; f=$(jq -r '.tool_input.file_path // empty'); case \"$f\" in \"$CLAUDE_PROJECT_DIR\"/*) ;; *) exit 0 ;; esac; case \"$f\" in *.md) d=$(cd \"$(dirname \"$f\")\" && pwd); cfg=\"\"; while :; do { [ -e \"$d/.vale.ini\" ] || [ -L \"$d/.vale.ini\" ]; } && { cfg=\"$d/.vale.ini\"; break; }; [ \"$d\" = \"/\" ] && break; d=$(dirname \"$d\"); done; [ -n \"$cfg\" ] || { echo 'hook: no Vale config found; run setup.md from the preferences repo' >&2; exit 2; }; command -v vale >/dev/null || { echo 'hook: vale missing; install per language.md section 4' >&2; exit 2; }; out=$(vale --config \"$cfg\" --output line \"$f\" 2>&1) || { printf '%s\\n' \"$out\" >&2; exit 2; } ;; esac"
           }
         ]
       }
@@ -124,6 +124,9 @@ Merge into `.claude/settings.json`:
 
 Notes:
 
+- Only files under the project (`$CLAUDE_PROJECT_DIR`, set by Claude Code for
+  hooks) are checked; markdown elsewhere, such as Claude's memory directory,
+  passes untouched. With the variable unset, everything is checked.
 - The Vale style lives in this repo; language.md section 4 says how to get it
   into a project.
 - Every failure is loud and names its fix: missing `jq`, no Vale config, missing
@@ -266,7 +269,7 @@ Merge into `.claude/settings.json`:
         "hooks": [
           {
             "type": "command",
-            "command": "command -v jq >/dev/null || { echo 'hook: jq missing; install a static jq binary into ~/.local/bin (no sudo needed)' >&2; exit 2; }; f=$(jq -r '.tool_input.file_path // empty'); case \"$f\" in *.tex) d=$(cd \"$(dirname \"$f\")\" && pwd); cfg=\"\"; while :; do { [ -e \"$d/.vale.ini\" ] || [ -L \"$d/.vale.ini\" ]; } && { cfg=\"$d/.vale.ini\"; break; }; [ \"$d\" = \"/\" ] && break; d=$(dirname \"$d\"); done; [ -n \"$cfg\" ] || { echo 'hook: no Vale config found; run setup.md from the preferences repo' >&2; exit 2; }; command -v vale >/dev/null || { echo 'hook: vale missing; install per language.md section 4' >&2; exit 2; }; command -v chktex >/dev/null || { echo 'hook: chktex missing; it ships with TeX Live' >&2; exit 2; }; out=$(vale --config \"$cfg\" --output line \"$f\" 2>&1) || { printf '%s\\n' \"$out\" >&2; exit 2; }; cout=$(chktex -q \"$f\" 2>&1) || { printf '%s\\n' \"$cout\" >&2; exit 2; } ;; esac"
+            "command": "command -v jq >/dev/null || { echo 'hook: jq missing; install a static jq binary into ~/.local/bin (no sudo needed)' >&2; exit 2; }; f=$(jq -r '.tool_input.file_path // empty'); case \"$f\" in \"$CLAUDE_PROJECT_DIR\"/*) ;; *) exit 0 ;; esac; case \"$f\" in *.tex) d=$(cd \"$(dirname \"$f\")\" && pwd); cfg=\"\"; while :; do { [ -e \"$d/.vale.ini\" ] || [ -L \"$d/.vale.ini\" ]; } && { cfg=\"$d/.vale.ini\"; break; }; [ \"$d\" = \"/\" ] && break; d=$(dirname \"$d\"); done; [ -n \"$cfg\" ] || { echo 'hook: no Vale config found; run setup.md from the preferences repo' >&2; exit 2; }; command -v vale >/dev/null || { echo 'hook: vale missing; install per language.md section 4' >&2; exit 2; }; command -v chktex >/dev/null || { echo 'hook: chktex missing; it ships with TeX Live' >&2; exit 2; }; out=$(vale --config \"$cfg\" --output line \"$f\" 2>&1) || { printf '%s\\n' \"$out\" >&2; exit 2; }; cout=$(chktex -q \"$f\" 2>&1) || { printf '%s\\n' \"$cout\" >&2; exit 2; } ;; esac"
           }
         ]
       }
@@ -296,8 +299,8 @@ Merge into `~/.claude/settings.json`:
 ```json
 {
   "attribution": {
-    "commit": false,
-    "pr": false,
+    "commit": "",
+    "pr": "",
     "sessionUrl": false
   }
 }
@@ -305,9 +308,47 @@ Merge into `~/.claude/settings.json`:
 
 Notes:
 
-- `commit` is the co-author trailer, `pr` the "generated with" footer in PR
-  bodies, `sessionUrl` the session link trailer.
+- `commit` is the co-author trailer and `pr` the "generated with" footer in PR
+  bodies; both are strings, and the empty string hides them. `sessionUrl` is a
+  boolean and `false` omits the session link trailer. Booleans for `commit` or
+  `pr` fail settings validation.
 - `includeCoAuthoredBy` is the deprecated older key; replace it with this object
   where found.
 - Other harnesses have no switch; there the workflow.md prose rule is the
   backstop.
+
+---
+
+## 9. Approval guard: git commit and push
+
+Enforces the git rule in workflow.md section 1. Any Bash command containing the
+word `git` together with the word `commit` or `push` triggers a permission
+prompt for jarl. Read-only git stays free, as workflow.md intends.
+
+Merge into `.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v jq >/dev/null || { echo 'hook: jq missing; install a static jq binary into ~/.local/bin (no sudo needed)' >&2; exit 2; }; cmd=$(jq -r '.tool_input.command // empty'); if printf '%s' \"$cmd\" | grep -qw git && printf '%s' \"$cmd\" | grep -qwE 'commit|push'; then printf '%s' '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"ask\",\"permissionDecisionReason\":\"workflow.md: committing or pushing needs jarl approval\"}}'; fi"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+Notes:
+
+- The two-word match catches `cd x && git commit` and `git -C dir push`; a
+  command like `git log --grep commit` false-positives and costs one prompt,
+  never a silent allow.
+- The prompt appears even when jarl asked for the commit in the same turn; one
+  extra click is the price of the guard.

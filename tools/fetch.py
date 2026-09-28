@@ -18,17 +18,24 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from playwright.sync_api import BrowserContext, sync_playwright
+from playwright.sync_api import (  # type: ignore  # uv script dep
+    BrowserContext,
+    sync_playwright,
+)
 
 PROFILE = Path.home() / ".local/share/jarl-fetch"
 UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 14.0; rv:128.0) Gecko/20100101 Firefox/128.0"
 
 
 def reddit_text(ctx: BrowserContext, url: str, depth: int, limit: int) -> str:
-    api = url.split("?")[0].rstrip("/") + f".json?limit={limit}&depth={depth}&raw_json=1"
+    api = (
+        url.split("?")[0].rstrip("/") + f".json?limit={limit}&depth={depth}&raw_json=1"
+    )
     resp = ctx.request.get(api)
     if not resp.ok:
-        sys.exit(f"fetch.py: reddit returned {resp.status} for {api}; log in with --login")
+        sys.exit(
+            f"fetch.py: reddit returned {resp.status} for {api}; log in with --login"
+        )
     listing = resp.json()
     post = listing[0]["data"]["children"][0]["data"]
     lines = [f"# {post['title']} [{post['score']}] r/{post['subreddit']}"]
@@ -44,7 +51,9 @@ def reddit_text(ctx: BrowserContext, url: str, depth: int, limit: int) -> str:
             body = " ".join(d.get("body", "").split())
             if body in ("[deleted]", "[removed]"):
                 continue
-            lines.append(f"{'  ' * level}[{d.get('score', 0)}] {d.get('author', '?')}: {body}")
+            lines.append(
+                f"{'  ' * level}[{d.get('score', 0)}] {d.get('author', '?')}: {body}"
+            )
             replies = d.get("replies")
             if isinstance(replies, dict):
                 walk(replies["data"]["children"], level + 1)
@@ -71,17 +80,26 @@ def main() -> None:
     ap.add_argument("--limit", type=int, default=100)
     args = ap.parse_args()
     with sync_playwright() as pw:
-        ctx = pw.firefox.launch_persistent_context(PROFILE, headless=not args.login, user_agent=UA)
+        ctx = pw.firefox.launch_persistent_context(
+            PROFILE, headless=not args.login, user_agent=UA
+        )
         if args.login:
             ctx.new_page().goto(args.url)
             input("Log in in the browser window, then press Enter here: ")
             ctx.close()
             return
         is_reddit = "reddit.com/r/" in args.url and "/comments/" in args.url
-        out = reddit_text(ctx, args.url, args.depth, args.limit) if is_reddit else page_text(ctx, args.url)
+        out = (
+            reddit_text(ctx, args.url, args.depth, args.limit)
+            if is_reddit
+            else page_text(ctx, args.url)
+        )
         ctx.close()
     if len(out) > args.max_chars:
-        out = out[: args.max_chars] + f"\n[truncated at {args.max_chars} chars; raise --max-chars]"
+        out = (
+            out[: args.max_chars]
+            + f"\n[truncated at {args.max_chars} chars; raise --max-chars]"
+        )
     print(out)
 
 

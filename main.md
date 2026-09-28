@@ -57,6 +57,7 @@ only here.
 | [reporting.md](reporting.md)               | how to write down results, numbers, tables        |
 | [language.md](language.md)                 | writing style, banned patterns and words          |
 | [cluster.md](cluster.md)                   | Slurm clusters: submitting jobs, login nodes      |
+| [anki.md](anki.md)                         | writing flashcards, building Anki decks           |
 | [workflow.md](workflow.md)                 | git etiquette, secrets, the mistakes log          |
 | [code-style.md](code-style.md)             | linting, Python, Rust, testing                    |
 | [hooks.md](hooks.md)                       | Claude Code hooks that enforce rules mechanically |
