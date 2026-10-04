@@ -2,13 +2,14 @@
 # requires-python = ">=3.11"
 # dependencies = ["genanki"]
 # ///
-"""Validate cards and build Anki decks; conventions in anki.md.
+"""Validate cards and build Anki decks; conventions in this skill's SKILL.md.
 
-Usage: uv run tools/anki.py anki/           # push via AnkiConnect (Anki open)
-       uv run tools/anki.py anki/ --check   # validate only
-       uv run tools/anki.py anki/ --approval  # write anki/approval.html
-       uv run tools/anki.py anki/ --apkg    # write anki/cards.apkg instead
-       uv run tools/anki.py --existing DECK # list the cards already in a deck
+Usage: uv run anki.py anki/             # push via AnkiConnect (Anki open)
+       uv run anki.py anki/ --check     # validate only
+       uv run anki.py anki/ --approval  # write anki/approval.html
+       uv run anki.py anki/ --apkg      # write anki/cards.apkg instead
+       uv run anki.py --existing DECK   # list the cards already in a deck
+       uv run anki.py --help            # print this text
 
 The directory holds one JSON file per subdeck: {"deck": full deck name,
 "cards": [...]}. Ids are unique across all files. A card is
@@ -132,7 +133,7 @@ FENCED = re.compile(r"```[\w-]*\n?(.*?)```", re.DOTALL)
 INLINE = re.compile(r"`([^`\n]+)`")
 TAGS = re.compile(r"<[^>]+>")
 CLOZE = re.compile(r"\{\{c\d+::(.*?)(?:::[^}]*)?\}\}", re.DOTALL)
-APPROVAL_PAGE = Path(__file__).with_name("anki_approval.html")
+APPROVAL_PAGE = Path(__file__).parent.parent / "assets" / "approval.html"
 PAGE_KEYS = (
     "id",
     "type",
@@ -527,7 +528,9 @@ def write_approval(
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser()
+    ap = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     ap.add_argument("cards_dir", type=Path, nargs="?")
     ap.add_argument("--check", action="store_true")
     ap.add_argument("--apkg", action="store_true")

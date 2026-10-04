@@ -29,13 +29,15 @@ Where the rules came from. Bookkeeping for jarl; not for models to read.
 - Contrastive Chain-of-Thought (https://arxiv.org/abs/2311.09277): why
   language.md teaches with don't/do pairs, kept few.
 - Nielsen, "Augmenting Long-term Memory"
-  (https://augmentingcognition.com/ltm.html): distilled into anki.md.
+  (https://augmentingcognition.com/ltm.html): distilled into the anki skill.
 - Matuschak, "How to write good prompts" (https://andymatuschak.org/prompts):
-  distilled into anki.md, with jarl's own conventions.
+  distilled into the anki skill, with jarl's own conventions.
 - Wozniak, "Twenty rules of formulating knowledge"
   (https://www.supermemo.com/en/blog/twenty-rules-of-formulating-knowledge):
-  basics first, which the priority order in anki.md follows. No source ranks
-  kinds of knowledge; the three tiers are our own design.
+  basics first, which the priority order in the anki skill follows. No source
+  ranks kinds of knowledge; the three tiers are our own design.
 - Rohrer 2012, "Interleaving helps students distinguish among similar concepts"
   (https://files.eric.ed.gov/fulltext/ED536926.pdf): why distinction cards are
-  welcome in every tier of anki.md.
+  welcome in every tier of the anki skill.
+- Agent Skills specification (https://agentskills.io/specification): the layout
+  of skills/.

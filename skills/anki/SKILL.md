@@ -1,7 +1,20 @@
+---
+name: anki
+description:
+  Write Anki flashcards for anything jarl studies, get jarl's approval on a
+  page, and push them into Anki. Use when jarl asks for flashcards, Anki cards
+  or a deck, or wants existing cards checked or converted.
+compatibility: Needs uv. Pushing needs Anki open with the AnkiConnect add-on.
+---
+
 # Anki cards
 
 Flashcards for anything jarl studies. Distilled from Nielsen and Matuschak
 (links at the bottom); fetch a source only when this file cannot answer.
+
+The tool is `scripts/anki.py` in this skill's folder, the folder this file is
+in. `${CLAUDE_SKILL_DIR}` below stands for that folder: where it shows as
+literal text, put the folder's path in its place.
 
 Material jarl provides is the notation source and the arbiter when unsure; match
 it. Notation jarl states wins over the material; record it in the project's
@@ -30,8 +43,8 @@ jarl reads and approves every card before it goes into Anki.
 - Ask which parts of the material jarl has covered, and write cards only for
   those. Read past exams or tests first if there are any, then the material.
 - List the cards already in the target deck with
-  `uv run tools/anki.py --existing <deck>`, and write no card that one of them
-  covers.
+  `uv run ${CLAUDE_SKILL_DIR}/scripts/anki.py --existing <deck>`, and write no
+  card that one of them covers.
 - For cards made outside the card files, ask jarl whether to convert them to the
   shared card style. Never convert unasked. After a yes, the card goes into the
   files with `adopt`, and Anki asks for a one-way sync once. After a no, the
@@ -39,9 +52,10 @@ jarl reads and approves every card before it goes into Anki.
 - Give each card its evidence: `where` it appears in the material and, with past
   exams, `asked` (directly or indirectly) plus the `exam` question. Cards asked
   directly come first, ahead of the priority order.
-- Build the page with `uv run tools/anki.py anki/ --approval` from this repo's
-  clone. In Claude Code, publish it and read jarl's choices back from it.
-  Elsewhere, jarl opens the file in a browser and pastes its text box back.
+- Build the page with
+  `uv run ${CLAUDE_SKILL_DIR}/scripts/anki.py anki/ --approval`. In Claude Code,
+  publish it and read jarl's choices back from it. Elsewhere, jarl opens the
+  file in a browser and pastes its text box back.
 - Remove the cards jarl dropped. A note on one card applies to every card of
   that kind: check all cards against each note, and report what changed.
 
@@ -55,7 +69,7 @@ jarl reads and approves every card before it goes into Anki.
   symmetric"; also defining \(f(x) = x^T A x\) is unused and gets cut. It uses
   no term or symbol jarl has not met yet.
 - Every card names its `kind`: the sort of answer it wants, such as definition
-  or theorem. Anki shows it at the top right of the card. The tool's header
+  or theorem. Anki shows it at the top right of the card. The tool's `--help`
   lists examples.
 - Card the general fact, never a specific exercise, which gets answered by rote.
   An example can go in the footer.
@@ -80,8 +94,9 @@ jarl reads and approves every card before it goes into Anki.
   up existing cards: one JSON file per subdeck, each naming its deck. Every card
   has a stable id, unique across the files.
 - Push after stating what changes and getting jarl's yes:
-  `uv run tools/anki.py anki/` from this repo's clone (AnkiConnect, Anki open),
-  or `--apkg` for a file to import manually.
+  `uv run ${CLAUDE_SKILL_DIR}/scripts/anki.py anki/` (AnkiConnect, Anki open),
+  or `--apkg` for a file to import manually. `--help` prints the card file
+  format.
 - The tool owns the mechanics; never work around it: it validates cards
   (duplicate ids, yes/no questions, missing fields, math not in MathJax
   `\(...\)`), applies the one shared note type (per-card formatting is banned),

@@ -30,3 +30,11 @@ claude plugin install rust-analyzer-lsp@claude-plugins-official
 
 Pick user scope when prompted. Verify with `claude plugin list`: a plugin can be
 installed yet disabled; enable it and restart the session.
+
+Skills install once per machine too. Each folder in [skills/](skills/) is linked
+into the agent's skills folder, so pulling this repo updates it. For Claude
+Code:
+
+```sh
+ln -s "$PREFS/skills/anki" ~/.claude/skills/anki
+```
