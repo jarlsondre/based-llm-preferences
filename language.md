@@ -103,6 +103,7 @@ clinical treatment, an actual organism).
 | comprehensive        | say what it covers                               |
 | landscape, journey   | name the thing                                   |
 | deep dive            | name the analysis                                |
+| tranche              | batch, part, or the number                       |
 
 ---
 
