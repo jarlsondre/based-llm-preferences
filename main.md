@@ -48,15 +48,15 @@ The f labels appear only in this section.
 
 ## Topics
 
-| file                                     | covers                                                                     |
-| ---------------------------------------- | -------------------------------------------------------------------------- |
-| [reporting.md](reporting.md)             | how to write down results, numbers, tables                                 |
-| [language.md](language.md)               | writing style, banned patterns and words                                   |
-| [cluster.md](cluster.md)                 | Slurm clusters: submitting jobs, login nodes                               |
-| [skills/anki/](skills/anki/SKILL.md)     | writing flashcards, building Anki decks                                    |
-| [workflow.md](workflow.md)               | git, secrets, the mistakes log, proposals                                  |
-| [code-style.md](code-style.md)           | linting, Rust, testing                                                     |
-| [skills/python/](skills/python/SKILL.md) | Python rules, renaming, starter configs                                    |
-| [hooks.md](hooks.md)                     | Claude Code hooks that enforce rules mechanically                          |
-| [setup.md](setup.md)                     | setting up a new machine, and a new project                                |
-| [tools/](tools/)                         | machine.py: setup; fetch.py: blocked pages; has_secret.py: is a secret set |
+| file                                       | covers                                                                     |
+| ------------------------------------------ | -------------------------------------------------------------------------- |
+| [reporting.md](reporting.md)               | how to write down results, numbers, tables                                 |
+| [language.md](language.md)                 | writing style, banned patterns and words                                   |
+| [skills/cluster/](skills/cluster/SKILL.md) | Slurm clusters: submitting jobs, login nodes, the runbook                  |
+| [skills/anki/](skills/anki/SKILL.md)       | writing flashcards, building Anki decks                                    |
+| [workflow.md](workflow.md)                 | git, secrets, the mistakes log, proposals                                  |
+| [code-style.md](code-style.md)             | linting, Rust, testing                                                     |
+| [skills/python/](skills/python/SKILL.md)   | Python rules, renaming, starter configs                                    |
+| [hooks.md](hooks.md)                       | Claude Code hooks that enforce rules mechanically                          |
+| [setup.md](setup.md)                       | setting up a new machine, and a new project                                |
+| [tools/](tools/)                           | machine.py: setup; fetch.py: blocked pages; has_secret.py: is a secret set |

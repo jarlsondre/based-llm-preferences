@@ -34,9 +34,9 @@ becomes a block.
 
 ## 1. Approval guard: Slurm and gh
 
-Enforces cluster.md rule 1 (no job submission without a yes) and the gh rule in
-workflow.md. Any Bash command containing `sbatch`, `srun`, `salloc`, or `gh` as
-a word triggers a permission prompt for jarl.
+Enforces section 1 of the cluster skill (no job submission without a yes) and
+the gh rule in workflow.md. Any Bash command containing `sbatch`, `srun`,
+`salloc`, or `gh` as a word triggers a permission prompt for jarl.
 
 Merge into `~/.claude/settings.json`:
 
@@ -49,7 +49,7 @@ Merge into `~/.claude/settings.json`:
         "hooks": [
           {
             "type": "command",
-            "command": "command -v jq >/dev/null || { echo 'hook: jq missing; install a static jq binary into ~/.local/bin (no sudo needed)' >&2; exit 2; }; cmd=$(jq -r '.tool_input.command // empty'); if printf '%s' \"$cmd\" | grep -qwE 'sbatch|srun|salloc'; then printf '%s' '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"ask\",\"permissionDecisionReason\":\"cluster.md rule 1: job submission needs jarl approval\"}}'; fi"
+            "command": "command -v jq >/dev/null || { echo 'hook: jq missing; install a static jq binary into ~/.local/bin (no sudo needed)' >&2; exit 2; }; cmd=$(jq -r '.tool_input.command // empty'); if printf '%s' \"$cmd\" | grep -qwE 'sbatch|srun|salloc'; then printf '%s' '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"ask\",\"permissionDecisionReason\":\"cluster skill section 1: job submission needs jarl approval\"}}'; fi"
           },
           {
             "type": "command",

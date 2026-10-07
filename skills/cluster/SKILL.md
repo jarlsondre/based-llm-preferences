@@ -1,6 +1,19 @@
+---
+name: cluster
+description:
+  "Rules and tools for Slurm clusters (Euler, Clariden): asking before every job
+  submission, requesting a tight time limit, keeping compute off login nodes,
+  and logging every job in the runbook. Use when working on a cluster or when a
+  command mentions sbatch, srun, salloc or Slurm."
+compatibility:
+  "Requires uv. The runbook tool reads sacct and scontrol on the cluster."
+---
+
 # Clusters
 
-Applies on every Slurm cluster (e.g. Euler, Clariden).
+Applies on every Slurm cluster (e.g. Euler, Clariden). `${CLAUDE_SKILL_DIR}` is
+the folder this file is in; where it shows as literal text, put the path in its
+place.
 
 ---
 
@@ -56,29 +69,31 @@ use; or enough memory to crowd a shared machine.
 
 ## 4. The runbook
 
-Every project that submits jobs keeps `runbook.jsonl` in the project root: one
-JSON object per line, appended at each submission (`sbatch`, `srun`, `salloc`,
-or a command the project's convention file adds). Login-node work is never
-logged. Fields:
+Every project that submits jobs keeps `runbook.jsonl` in the project root, one
+line per job, written only through the tool, never by hand. Login-node work is
+never logged.
 
-- `job_id`: from the submit command's output
-- `cluster`: which cluster, e.g. "euler"
-- `submitted`: ISO 8601 timestamp with timezone
-- `commit`: `git rev-parse HEAD` at submit
-- `command`: the exact submit line, verbatim
-- `owner`: who ran it (reporting.md rule 4)
-- `what`, `why`: the two lines from the ask (section 1); max 100 and 500
-  characters
-- `time_requested`: the walltime asked for
-- `time_used`: "TBD" at submit
-- `outcome`: "TBD" at submit
+Right after a submission (`sbatch`, `srun`, `salloc`, or a command the project's
+convention file adds), with the job id from its output:
 
-Example at submit:
-
-<!-- prettier-ignore -->
-```json
-{"job_id": "4812345", "cluster": "euler", "submitted": "2026-10-04T14:30:00+02:00", "commit": "1af1451c0de9b7a2f3e4d5c6b7a8f9e0d1c2b3a4", "command": "sbatch --time=01:30:00 train.sh --seed 1", "owner": "jarl", "what": "trains the baseline model, seed 1", "why": "the first of three seeds for the results table", "time_requested": "01:30:00", "time_used": "TBD", "outcome": "TBD"}
+```sh
+uv run ${CLAUDE_SKILL_DIR}/scripts/runbook.py add JOB_ID --command "the submit line, verbatim" --what "..." --why "..."
 ```
 
-The first session that reads the job's results fills `time_used` and `outcome`
-from `sacct`. Read the runbook only to update an entry or when jarl asks.
+`what` and `why` are the two lines from the ask (section 1), at most 100 and 500
+characters. The tool fills the cluster, the timestamp, the commit, the owner
+(`jarl`; `--owner` for someone else, reporting.md rule 4) and the time
+requested, which it reads from `--time` in the command or takes from
+`--time-requested`.
+
+The first session that reads the job's results closes the entry:
+
+```sh
+uv run ${CLAUDE_SKILL_DIR}/scripts/runbook.py close JOB_ID --outcome "one line on what came out"
+```
+
+That fills `time_used` and the job's final state from `sacct`.
+
+A wrong entry is fixed by running `add` again with the same job id: the fields
+given replace the old ones. Read the runbook only to update an entry or when
+jarl asks; `--help` on the tool has the fields.
