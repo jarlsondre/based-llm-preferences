@@ -1,5 +1,5 @@
 extends: existence
-message: "filler (language.md): delete it or say the thing directly"
+message: "filler (language.md): delete it"
 level: error
 ignorecase: true
 tokens:

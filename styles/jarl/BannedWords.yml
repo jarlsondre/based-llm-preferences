@@ -1,5 +1,5 @@
 extends: substitution
-message: "banned word (language.md): write '%s', not '%s'"
+message: "banned word (language.md): %s. Found: '%s'"
 level: error
 ignorecase: true
 swap:

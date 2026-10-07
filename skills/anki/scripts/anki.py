@@ -14,23 +14,27 @@ Usage: uv run anki.py anki/             # push via AnkiConnect (Anki open)
 The directory holds one JSON file per subdeck: {"deck": full deck name,
 "cards": [...]}. Ids are unique across all files. A card is
 {"id": stable-slug, "front": question, "back": answer},
-{"id": stable-slug, "type": "cloze", "text": ...}, or
-{"id": stable-slug, "type": "steps", "intro": claim or title, "steps": [...]}.
-A steps card (a proof, an algorithm, a protocol) expands to one cloze note per
-step with ids id-1..id-n: earlier steps shown, step k blanked, later steps as
-"hidden" placeholders. All take optional "setting" (definitions the question
-needs) and "extra" (footer for the curious).
+{"id": stable-slug, "type": "cloze", "text": text with {{c1::...}} deletions},
+or {"id": stable-slug, "type": "steps", "intro": claim or title, "steps": [...]}.
+A steps card expands to one cloze note per step with ids id-1..id-n: earlier
+steps shown, step k blanked, later steps as "hidden" placeholders. It needs at
+least 2 steps and takes no cloze markup and no "adopt"; "intro" is optional. A
+front that opens with is, are, does, can or a similar verb is rejected as a
+yes/no question. All take optional "setting" (definitions the question needs)
+and "extra" (footer for the curious).
 
-"kind" says what sort of answer the card wants, in one or two words. It is
-shown as a plain label at the top right of the card. In math: "definition", "theorem",
-"proposition", "example", "notation", "intuition". Elsewhere: "term",
-"property", "mechanism", "comparison", "command".
+"kind" is the sort of answer the card wants, in one or two words, shown at the
+top right of the card. Every new card has one; the tool does not check this.
+In math: "definition", "theorem", "proposition", "example", "notation",
+"intuition". Elsewhere: "term", "property", "mechanism", "comparison",
+"command".
 
-Code goes in backticks, inline or as a fenced block. It is escaped and shown
+Math is MathJax \\(...\\) or \\[...\\]; a bare $ outside code is rejected. Code
+goes in backticks, inline or as a fenced block. It is escaped and shown
 literally, so cloze markup and math inside code are not interpreted.
 
-The files decide where a card lives: a card whose entry moves to another file
-is moved to that file's deck on the next push.
+A card whose entry moves to another file moves to that file's deck on the next
+push.
 
 --approval writes the page where jarl approves cards before a push: the cards
 not pushed yet (--approval-all: every card), with a tick and a note per card.
@@ -40,12 +44,17 @@ optional fields, which a push ignores: "topic" (a heading inside the subdeck),
 "indirectly") with "exam" (the past exam or test question). A card with neither
 counts as never asked.
 
-"adopt": Anki note id, on a card, converts that existing note to the shared
-note type on the next push, keeping its review history. Only after jarl said
-yes to converting it.
+--existing prints one line per note: Anki note id, card id or NOT IN FILES (a
+note this tool did not make), note type, question => answer.
+
+"adopt": Anki note id (the first column of --existing), on a card, converts
+that existing note to the shared note type on the next push, keeping its
+review history.
 
 pushed.json in the directory records pushed ids: an id pushed before but now
-missing from Anki was deleted by jarl in review and is never re-added.
+missing from Anki was deleted by jarl in review, and a push never re-adds it.
+--apkg ignores pushed.json and "adopt": its import brings back deleted cards
+and duplicates an adopted card. Use it only when Anki cannot be reached.
 """
 
 import argparse
@@ -77,7 +86,7 @@ CSS = """.card {
   text-transform: uppercase; opacity: .75; margin-bottom: 2px;
 }
 .setting::before { content: "Setting"; }
-.extra::before { content: "Note"; }
+.extra::before { content: "Extra"; }
 .q { font-size: 21px; }
 hr#answer { border: 0; border-top: 1px solid rgba(128,128,128,.45); margin: 20px 0 16px; }
 .extra {
@@ -183,7 +192,12 @@ def load(cards_dir: Path) -> list[dict[str, Any]]:
         sys.exit(f"anki.py: no card files (*.json) in {cards_dir}")
     cards = []
     for path in files:
-        data = json.loads(path.read_text())
+        try:
+            data = json.loads(path.read_text())
+        except json.JSONDecodeError as e:
+            sys.exit(f"anki.py: {path.name}: invalid JSON ({e})")
+        if not isinstance(data, dict) or "deck" not in data or "cards" not in data:
+            sys.exit(f'anki.py: {path.name}: needs a "deck" and a "cards" key')
         for raw in data["cards"]:
             card = dict(raw) | {"deck": data["deck"], "file": path.name}
             for key in CONTENT:
@@ -202,7 +216,7 @@ def label(card: dict[str, Any]) -> str:
 def expand_steps(
     cards: list[dict[str, Any]],
 ) -> tuple[list[dict[str, Any]], list[str]]:
-    """Turn steps cards into one cloze note per step; later steps show as placeholders."""
+    """Expand each steps card into one cloze note per step."""
     out: list[dict[str, Any]] = []
     errors = []
     for card in cards:
@@ -263,7 +277,7 @@ def validate(cards: list[dict[str, Any]]) -> list[str]:
             )
         if kind == "basic" and YES_NO.match(card.get("front", "")):
             errors.append(
-                f"{label(card)}: yes/no question; rephrase open-ended (anki.md)"
+                f"{label(card)}: yes/no question; rephrase open-ended (SKILL.md)"
             )
         if not isinstance(card.get("kind", ""), str):
             errors.append(f'{label(card)}: kind must be text, such as "definition"')
@@ -272,7 +286,7 @@ def validate(cards: list[dict[str, Any]]) -> list[str]:
         if any(BARE_DOLLAR.search(str(card.get(key, ""))) for key in CONTENT):
             errors.append(
                 rf"{label(card)}: bare $ outside code; math is MathJax \(...\),"
-                " code goes in backticks (anki.md)"
+                " code goes in backticks (SKILL.md)"
             )
     return errors
 
@@ -494,7 +508,7 @@ def page_title(cards: list[dict[str, Any]]) -> tuple[str, str]:
 def write_approval(
     cards: list[dict[str, Any]], pushed: set[str], out: Path, per_day: int, full: bool
 ) -> None:
-    """Write the page where jarl reads, ticks and comments on cards before a push."""
+    """Write the approval page."""
     rows = []
     for card in cards:
         steps = card["steps"] if card.get("type") == "steps" else []
@@ -512,7 +526,7 @@ def write_approval(
         rows.append(row)
     if not rows:
         sys.exit(
-            "anki.py: nothing to approve, every card is in Anki; try --approval-all"
+            "anki.py: nothing to approve, every card was pushed before; use --approval-all"
         )
     title, subtitle = page_title(cards)
     data = {"subtitle": subtitle, "per_day": per_day, "rows": rows}

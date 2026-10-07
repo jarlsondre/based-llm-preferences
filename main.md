@@ -1,30 +1,29 @@
 # LLM preferences
 
-This repo describes how an LLM assistant should behave. This file serves as an
-entry point.
+Rules for how an LLM assistant behaves. This file is the entry point: the index
+and the rules that always apply.
 
 "jarl" throughout these files means the human user.
 
 ## How to read this repo
 
-- This file holds the index and the few rules that always apply.
-- Each topic file holds the detail for one area. Read the ones relevant to the
-  task at hand.
-- A rule found anywhere else (an old file, a habit, another session) is a
-  proposal until it is written here.
-- `plans.md` and `sources.md` are jarl's bookkeeping, and `README.md` is for
-  human readers: do not read them.
+- Read the topic files (table below) that the task needs.
+- A rule found anywhere else (an old file, a habit, another session) is not a
+  rule until it is written in this repo.
+- Do not read `plans.md`, `sources.md` or `README.md`: they hold no rules.
+- Change this repo only when jarl has told you, in this session, to work on it.
+  Otherwise, when a rule seems wrong or missing, ask in the For jarl section
+  whether to fix it.
 
 ## Rules that always apply
 
 - Give the minimal sufficient answer: a lookup gets a line, an explanation gets
-  paragraphs. Nothing after the answer is done. Files follow the same rule.
-- Do not commit, push, or run `gh` without asking first; details in
+  paragraphs. Stop when the answer is complete. Files follow the same rule.
+- Never commit, push, or run `gh` without jarl's yes; details in
   [workflow.md](workflow.md).
-- Prefer LSP operations for code navigation (definitions, references, symbols);
-  grep is for text and pattern searches.
-- If an LSP call fails because no language server is configured, say so in the
-  For jarl section; the fix is in setup.md.
+- In Claude Code, guards, user settings and skills are installed per machine by
+  `uv run tools/machine.py` from this repo's clone, never by hand;
+  [setup.md](setup.md) names the two things that go in a project's settings.
 
 ## The For jarl section
 
@@ -38,32 +37,26 @@ f2) second item
 ```
 
 Every item is a request: an approval to give, a command to run, a question to
-answer. The test: jarl reads the item and now has something to do. A sentence
-that only informs the reader is not an item; report it in the body of the
-response, never here. With no requests, the whole section is exactly one line:
-`**For jarl:** none`.
+answer. Information goes in the body of the response, never here. With no
+requests, the whole section is exactly one line: `**For jarl:** none`.
 
 When a response follows another response with no reply from jarl in between (for
 example after a hook bounce), repeat every still-unanswered item verbatim, same
-labels, same order, and append any new items after them.
+labels, same order, then append new items, continuing the numbering.
 
-Ordinary numbered lists are fine elsewhere in the response; the f labels appear
-only here.
+The f labels appear only in this section.
 
 ## Topics
 
-| file                                       | covers                                            |
-| ------------------------------------------ | ------------------------------------------------- |
-| [reporting.md](reporting.md)               | how to write down results, numbers, tables        |
-| [language.md](language.md)                 | writing style, banned patterns and words          |
-| [cluster.md](cluster.md)                   | Slurm clusters: submitting jobs, login nodes      |
-| [skills/anki/](skills/anki/SKILL.md)       | writing flashcards, building Anki decks           |
-| [workflow.md](workflow.md)                 | git etiquette, secrets, the mistakes log          |
-| [code-style.md](code-style.md)             | linting, Python, Rust, testing                    |
-| [hooks.md](hooks.md)                       | Claude Code hooks that enforce rules mechanically |
-| [python/](python/)                         | starter configs for Python projects               |
-| [gitignore](gitignore)                     | starter .gitignore for new projects               |
-| [.vale.ini](.vale.ini), [styles/](styles/) | mechanical enforcement of language.md             |
-| [.prettierrc](.prettierrc)                 | markdown prose wrapped at 80 columns              |
-| [setup.md](setup.md)                       | copying these configs into a project              |
-| [tools/](tools/)                           | scripts to run, e.g. fetch.py for blocked pages   |
+| file                                     | covers                                                                     |
+| ---------------------------------------- | -------------------------------------------------------------------------- |
+| [reporting.md](reporting.md)             | how to write down results, numbers, tables                                 |
+| [language.md](language.md)               | writing style, banned patterns and words                                   |
+| [cluster.md](cluster.md)                 | Slurm clusters: submitting jobs, login nodes                               |
+| [skills/anki/](skills/anki/SKILL.md)     | writing flashcards, building Anki decks                                    |
+| [workflow.md](workflow.md)               | git, secrets, the mistakes log, proposals                                  |
+| [code-style.md](code-style.md)           | linting, Rust, testing                                                     |
+| [skills/python/](skills/python/SKILL.md) | Python rules, renaming, starter configs                                    |
+| [hooks.md](hooks.md)                     | Claude Code hooks that enforce rules mechanically                          |
+| [setup.md](setup.md)                     | setting up a new machine, and a new project                                |
+| [tools/](tools/)                         | machine.py: setup; fetch.py: blocked pages; has_secret.py: is a secret set |

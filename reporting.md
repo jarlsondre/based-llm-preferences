@@ -9,59 +9,39 @@ any project.
 
 When a metric can be computed in more than one way (different question sets,
 datasets, splits, configs), never write the bare metric name. Say which variant,
-even when it feels obvious from context. Two numbers with the same bare name and
-different definitions are the classic way results get blended.
+even when it feels obvious from context: two numbers with the same bare name and
+different definitions get blended.
 
-If the project has short canonical names for the variants, use those. If it does
-not, invent them once, define them once, and use them consistently.
+Use the project's names for the variants. If it has none, define names once, in
+plain words (rule 3), and reuse them.
 
 ---
 
 ## 2. Say what the percentage is a percentage of
 
-A percentage is meaningless without its denominator. This holds for any rate,
-fraction, or percentage. Two denominators that sound similar can differ wildly
-(e.g. "of all samples" vs. "of samples that passed a filter"), and the
-difference can be larger than the effect being reported.
+This holds for every rate, fraction and percentage, and every time: also when
+the number right before it used the same total. "Of all samples" and "of samples
+that passed a filter" are different numbers.
 
-Put the denominator in the column header when it fits. When it needs a longer
-explanation, put a numbered marker in the header and explain it under the table.
-What matters is that every rate points at its denominator somewhere.
-
-If a number is quoted from an older source that only survives on one
-denominator, say so.
+In a table, follow rule 6.
 
 ---
 
-## 3. Write plain words
+## 3. No invented shorthand
 
-No abbreviation is used without jarl's approval: not in column headers, not in
-field names, not in file names. Shorthand only costs the reader.
+No invented shorthand without jarl's approval, including in column headers,
+field names and file names. Everyday abbreviations are fine: units, GPU, "e.g.".
 
-Pre-approved: names that are already the real name of the thing, meaning
-established project terms and code identifiers quoted as code. When quoting a
-code identifier, say in words what it means the first time it appears.
-
-<!-- vale jarl.BannedWords = NO -->
-
-**No borrowed jargon.** Do not describe work with words borrowed from another
-field (e.g. "treatment arm" / "control arm" from clinical trials) when plainer
-words say what was actually done. Better still, name the selection itself: "top
-6,000 by score" says what was done; "treatment" makes the reader look it up.
-Banned words are listed in [language.md](language.md).
-
-<!-- vale jarl.BannedWords = YES -->
+Pre-approved: established project terms and code identifiers quoted as code. Say
+in words what an identifier means the first time it appears.
 
 ---
 
 ## 4. Say where the result came from
 
-Every result is marked with who produced it: jarl, a named colleague, or "not
-jarl" when the owner is unknown. An unknown owner is never a reason to leave a
-result unmarked.
-
-For anything that is not jarl's, say also whether it has been checked. The
-reader must never have to guess whether a number is jarl's.
+Mark every result with who produced it: jarl, a named colleague, or "not jarl"
+when the owner is unknown. A result a session ran for jarl is jarl's. For a
+result that is not jarl's, also say whether jarl has checked it.
 
 ---
 
@@ -73,7 +53,7 @@ Every results file opens with four fields:
 ---
 owner: <who ran it>
 status: <how complete, in plain words: "done", "7 of 8 runs complete">
-computed: <date the numbers were computed, not the edit date>
+computed: <date the numbers were computed (YYYY-MM-DD), not the edit date>
 source: <where the numbers came from: a path, run name, or report>
 ---
 ```
@@ -90,21 +70,19 @@ Every table states, somewhere in or directly under it:
 
 **Footnotes.** A qualifier goes in the column header if it fits. If not, put a
 numbered marker on the header or cell it applies to and explain it under the
-table. Never leave a caveat as loose prose below: a reader scanning the table
-will take the number at face value and miss it. A marker is also how a table
-admits what it does not know ("nobody recorded how this baseline was built").
+table. Never leave a caveat as unmarked prose below the table: a scanning reader
+misses it. Unknowns get a marker too ("nobody recorded how this baseline was
+built").
 
 ---
 
 ## 7. Missing numbers
 
-Two markers, with different meanings:
-
 - **`TBD`**: this number is expected but not computed yet
 - **`n/a`**: this number does not exist for this row, and will not
 
-Never leave a cell blank. Never use `X`, `--`, or `?`. A blank reads as zero to
-a tired human and to a machine, and `X` reads as a value.
+Never leave a cell blank, and never use `X`, `--`, or `?`: a blank reads as zero
+and `X` as a value.
 
 ---
 
@@ -113,34 +91,30 @@ a tired human and to a machine, and `X` reads as a value.
 Before launching anything expensive (a training run, a large eval, a long
 computation), show the exact table the run will fill in, with placeholder
 values: the table itself, not a description of it. Then stop and wait for
-confirmation. This is where misunderstandings get caught while they are still
-free.
+confirmation: a misunderstanding caught here is still free.
 
 ---
 
 ## 9. Write for someone who was not there
 
 A results file is ready when a reader with no memory of the run can tell what
-was measured, on what data, over which denominator, and whose it is. If that
-means repeating context that felt obvious while the run was fresh, repeat it.
-The file is the record, not a note to self.
+was measured, on what data, over which denominator, and whose it is. The file is
+the record, not a note to self.
 
 ---
 
 ## 10. Conventions live in one place
 
-Each project has one file that is the source of truth for its conventions. A
-rule found anywhere else (a session's config, a colleague's report, a habit in
-an older file) is a proposal until it is written there. Propose the change,
-wait, then edit that file. Do not follow a convention from a file you did not
-write without asking first.
+Each project has one convention file (`CLAUDE.md` for Claude Code). A convention
+found anywhere else (a session's config, a colleague's report, an older file) is
+a proposal: ask before following it, and write it into the convention file only
+per workflow.md section 4.
 
 ---
 
 ## 11. Write results down when they appear
 
-A result exists the moment a number is read off a finished job. Write it to the
-project's report, or its inbox for unfiled results, in the same session that
-produced it and before starting anything else. A result living only in a
-session's context or on scratch storage is not recorded: sessions end and
-scratch expires.
+The moment a number is read off a finished job, write it to the project's
+report, or its inbox for unfiled results (the convention file names both),
+before starting anything else. Session context and scratch storage do not count
+as written.

@@ -41,3 +41,7 @@ Where the rules came from. Bookkeeping for jarl; not for models to read.
   welcome in every tier of the anki skill.
 - Agent Skills specification (https://agentskills.io/specification): the layout
   of skills/.
+- Anthropic, "Be clear and direct"
+  (https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/be-clear-and-direct):
+  a rule with its reason is followed better in cases the rule did not list; why
+  the audit kept one-clause reasons (CLAUDE.md).

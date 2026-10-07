@@ -98,8 +98,8 @@ textarea{width:100%;font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;fon
 <div class="wrap">
   <header class="top">
     <h3 id="subtitle"></h3>
-    <h1>Cards to approve before they go into Anki</h1>
-    <p class="lede">Untick a card to drop it, and leave a note on any card whose wording should change. A note on one card is applied to every card of that kind. Your ticks and notes are saved as you go.</p>
+    <h1>Approve cards for Anki</h1>
+    <p class="lede">Untick a card to drop it. Write a note where a card should change; Claude applies it to every card with the same flaw.</p>
     <div class="legend" id="legend"></div>
   </header>
 
@@ -110,9 +110,9 @@ textarea{width:100%;font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;fon
   <div id="sections"></div>
 
   <section class="panel">
-    <h2>Your decisions as text</h2>
-    <p class="lede">Claude reads the saved choices directly. This box holds the same information, in case you would rather paste it.</p>
-    <textarea id="summary" rows="6" readonly aria-label="Your decisions as text"></textarea>
+    <h2>Your choices as text</h2>
+    <p class="lede">The same choices as text. Paste it to Claude when the status says they were not saved online.</p>
+    <textarea id="summary" rows="6" readonly aria-label="Your choices as text"></textarea>
     <label for="general">Anything else Claude should know</label>
     <textarea id="general" rows="3"></textarea>
   </section>
@@ -149,7 +149,7 @@ window.MathJax = {tex:{inlineMath:[["\\(","\\)"]],displayMath:[["\\[","\\]"]]},s
   function card(r){
     var html = "", setting = r.setting ? part("setting", "Setting", r.setting) : "";
     if (r.type === "steps"){
-      html += part("q", "Claim", r.intro || "") + setting;
+      html += part("q", "Title", r.intro || "") + setting;
       html += part("a", "Steps", "<ol>" + r.steps.map(function(s){ return "<li>" + s + "</li>"; }).join("") + "</ol>");
     } else if (r.type === "cloze"){
       html += part("q", "Text", r.text) + setting;
@@ -157,14 +157,14 @@ window.MathJax = {tex:{inlineMath:[["\\(","\\)"]],displayMath:[["\\[","\\]"]]},s
       html += part("q", "Question", r.front) + setting;
       html += part("a", "Answer", r.back);
     }
-    if (r.extra) html += part("extra", "Note", r.extra);
+    if (r.extra) html += part("extra", "Extra", r.extra);
     return html;
   }
   function tags(r){
     var html = '<span class="tag ' + (r.inAnki ? 'old">in Anki' : 'new">new') + '</span>';
     if (r.kind) html += '<span class="tag what">' + esc(r.kind) + '</span>';
     if (r.type === "steps") html += '<span class="tag kind">steps · ' + r.cards + ' cards</span>';
-    if (r.type === "cloze") html += '<span class="tag kind">blank</span>';
+    if (r.type === "cloze") html += '<span class="tag kind">cloze</span>';
     if (HAS_EXAM) html += '<span class="tag ' + r.asked + '">' + ASKED_LABEL[r.asked] + (r.exam ? ': ' + esc(r.exam) : '') + '</span>';
     if (r.where) html += '<span class="where">' + esc(r.where) + '</span>';
     return html;
@@ -173,8 +173,8 @@ window.MathJax = {tex:{inlineMath:[["\\(","\\)"]],displayMath:[["\\[","\\]"]]},s
   function buildChrome(){
     $("subtitle").textContent = DATA.subtitle;
     var legend = '<span><span class="tag new">new</span> not in Anki yet</span>';
-    if (HAS_OLD) legend += '<span><span class="tag old">in Anki</span> an existing card, to be converted to the shared format</span>';
-    legend += '<span><span class="tag kind">steps</span> one Anki card per step</span>';
+    if (HAS_OLD) legend += '<span><span class="tag old">in Anki</span> an existing card, to be converted to the shared note type</span>';
+    if (ROWS.some(function(r){ return r.what === "steps"; })) legend += '<span><span class="tag kind">steps</span> one Anki card per step</span>';
     $("legend").innerHTML = legend;
     var bar = '<div class="stat"><b id="s-total">0</b><small>cards kept of ' + TOTAL + '</small></div>' +
       '<div class="stat new"><b id="s-new">0</b><small>new</small></div>';
@@ -186,9 +186,9 @@ window.MathJax = {tex:{inlineMath:[["\\(","\\)"]],displayMath:[["\\[","\\]"]]},s
       '<div class="save" id="save">Loading saved choices</div>';
     $("bar").innerHTML = bar;
     saveEl = $("save");
-    var controls = '<button type="button" id="keep-all">Keep everything</button><button type="button" id="drop-all">Drop everything</button>';
-    if (HAS_EXAM) controls += '<button type="button" id="keep-directly">Keep only asked in an exam</button>' +
-      '<button type="button" id="keep-seen">Keep asked or close to a question</button>';
+    var controls = '<button type="button" id="keep-all">Keep all</button><button type="button" id="drop-all">Drop all</button>';
+    if (HAS_EXAM) controls += '<button type="button" id="keep-directly">Keep only cards asked in an exam</button>' +
+      '<button type="button" id="keep-seen">Keep cards asked or close to a question</button>';
     controls += '<label><input type="checkbox" id="hide-dropped"> Hide dropped cards</label>';
     $("controls").innerHTML = controls;
   }
@@ -265,7 +265,7 @@ window.MathJax = {tex:{inlineMath:[["\\(","\\)"]],displayMath:[["\\[","\\]"]]},s
       saving = false; saveEl.textContent = "Saved. Claude can read these choices.";
       if (dirty) flush();
     }, function(){
-      saving = false; saveEl.textContent = "Could not save online. Kept in this browser; paste the text box to Claude.";
+      saving = false; saveEl.textContent = "Saved in this browser only. Paste the text box to Claude.";
     });
   }
 

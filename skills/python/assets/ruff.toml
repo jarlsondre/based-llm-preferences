@@ -6,14 +6,14 @@ extend-exclude = ["**/migrations"]
 [lint]
 select = [
   "E",   # pycodestyle errors
-  "F",   # pyflakes: undefined names, unused imports, etc.
+  "F",   # pyflakes: undefined names, unused imports
   "I",   # isort: import sorting
   "W",   # pycodestyle warnings
   "B",   # flake8-bugbear: likely bugs and bad practices (e.g. mutable defaults)
   "C4",  # flake8-comprehensions: unnecessary or suboptimal comprehensions
   "C901", # mccabe complexity: decompose the function; never noqa without asking jarl first
   "SIM", # flake8-simplify: redundant ifs, returns, boolean logic
-  "UP",  # pyupgrade: use modern Python syntax (e.g. f-strings, `Path()` literals)
+  "UP",  # pyupgrade: modern Python syntax (e.g. f-strings)
   "PTH", # flake8-use-pathlib: use pathlib instead of os.path
   "N",   # pep8-naming: naming conventions for classes, functions, variables
   "ANN", # flake8-annotations: require type annotations on functions
@@ -34,7 +34,7 @@ select = [
   "RUF", # ruff's own rules, including RUF100: no stale noqa comments
   "NPY", # numpy modernization, e.g. Generator API over np.random.seed
   "PD", # pandas-vet, e.g. no inplace=True
-  "FIX", # no TODO/FIXME/HACK left in code: do it or move it to the backlog file
+  "FIX", # no TODO/FIXME/HACK left in code: do it now or raise it in the For jarl section
 ]
 ignore = [
   "E203",   # Whitespace before ':': conflicts with the formatter
@@ -42,17 +42,19 @@ ignore = [
   "PTH122", # Avoid replacing os.path.splitext: Path.suffix drops info (e.g. .tar.gz)
   "PTH123", # Allow use of builtin open(): Path.open() adds no real benefit
   "UP006",  # Keep using typing.List/Dict/Set: prefer consistency over builtin generics
-  "UP035",  # Same as above: avoid auto-converting to list[]/dict[] syntax
+  "UP035",  # Same as UP006
   "B904",   # Don't require `from err` in CLI code: breaks Typer/Click behavior
-  "SIM108", # Don't always use ternary operators: they can be kind of hard to read sometimes
-  "N806",   # Allow UPPER_CASE_VARIABLE_NAMES in function scopes (for default values etc.)
-  "N812",   # Allow importing stuff as uppercase (e.g. function as F)
+  "SIM108", # No forced ternaries: they can be harder to read
+  "N806",   # Allow UPPER_CASE_VARIABLE_NAMES in function scopes
+  "N812",   # Allow uppercase import aliases (e.g. `functional as F`)
 ]
 fixable = ["ALL"]
 
 [lint.per-file-ignores]
 # Tests don't need full annotation coverage.
 "**/tests.py" = ["ANN"]
+"**/test_*.py" = ["ANN"]
+"**/tests/**" = ["ANN"]
 
 [format]
 quote-style = "double"

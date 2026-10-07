@@ -2,14 +2,15 @@
 # requires-python = ">=3.11"
 # dependencies = ["playwright"]
 # ///
-"""Fetch a page through a logged-in headless Firefox and print it as text.
+"""Fetch a page the built-in fetch cannot get (login wall, bot block) and print it as text.
 
-Usage: uv run tools/fetch.py URL [--max-chars N]
+Usage: uv run tools/fetch.py URL [--max-chars N] [--depth N] [--limit N]
        uv run tools/fetch.py --login URL   # opens a window; log in, then press Enter
 
-The browser profile persists in ~/.local/share/jarl-fetch, so a login is done
-once per site per machine. Reddit threads come out as compact comment lines;
-other pages as their visible text. Browser install, once per machine:
+The page loads in headless Firefox. The profile in ~/.local/share/jarl-fetch
+keeps logins: one --login per site per machine. Reddit threads print as one
+line per comment, other pages as their visible text. --depth (reply levels) and
+--limit (comments fetched) apply to Reddit threads only. Once per machine:
 uv run --with playwright playwright install firefox
 """
 
@@ -34,7 +35,7 @@ def reddit_text(ctx: BrowserContext, url: str, depth: int, limit: int) -> str:
     resp = ctx.request.get(api)
     if not resp.ok:
         sys.exit(
-            f"fetch.py: reddit returned {resp.status} for {api}; log in with --login"
+            f"fetch.py: reddit returned {resp.status} for {api}; on 403, run: uv run tools/fetch.py --login URL"
         )
     listing = resp.json()
     post = listing[0]["data"]["children"][0]["data"]
@@ -72,7 +73,9 @@ def page_text(ctx: BrowserContext, url: str) -> str:
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser()
+    ap = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     ap.add_argument("url")
     ap.add_argument("--login", action="store_true")
     ap.add_argument("--max-chars", type=int, default=30000)
