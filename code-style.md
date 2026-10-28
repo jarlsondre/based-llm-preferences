@@ -21,10 +21,12 @@
 - Edit files with the harness's editing tools, never with string-replacement
   commands or scripts (`sed -i`, `.replace()` one-liners). Those skip the hooks,
   and a failed match is a silent no-op where the editing tool fails loudly. Two
-  exceptions: the rename tool in the python skill; and a mechanical transform
-  across many files (never one or two), where jarl is told before the script
-  runs and the script sets the encoding explicitly, counts the replacements, and
-  fails on zero matches.
+  exceptions. The rename tool in the python skill. A mechanical transform across
+  many files, never one or two: tell jarl before the script runs. The script
+  sets the encoding explicitly, counts the replacements, and fails on zero
+  matches. Guard 11 in hooks.md denies such a command unless its first line is
+  `# not using Edit because: <reason>`. The reason names what the editing tool
+  cannot do, such as a command whose output is the file.
 
 ---
 

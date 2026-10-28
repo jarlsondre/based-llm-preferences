@@ -381,3 +381,50 @@ Notes:
 
 - It reads the command text only. A message passed through a file
   (`git commit -F`) is not seen.
+
+---
+
+## 11. Edit guard: no shell edits without a reason
+
+Enforces the editing-tools rule in code-style.md section 1. The guard denies
+these Bash commands, with a message to use the Edit or Write tool:
+
+- an edit of a file in place (`sed -i`, `perl -i`);
+- a write to a file with `tee` or a `>` or `>>` redirect;
+- inline Python, Perl, Node or Ruby that writes a file.
+
+The command passes when its first line is `# not using Edit because: <reason>`.
+The guard ignores writes to `/dev/null`, `/tmp`, the scratchpad and file
+descriptors.
+
+Merge into `~/.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v jq >/dev/null || { echo 'hook: jq missing; install a static jq binary into ~/.local/bin (no sudo needed)' >&2; exit 2; }; cmd=$(jq -r '.tool_input.command // empty'); if printf '%s' \"$cmd\" | head -n1 | grep -qE '^[[:space:]]*# not using Edit because: *[^[:space:]]'; then exit 0; fi; msg='shell-edit guard (code-style.md): use the Edit or Write tool. If it cannot do this, start the command with a line \"# not using Edit because: <reason>\" and run it again'; bare=$(printf '%s' \"$cmd\" | sed -E \"s/'[^']*'//g; s/\\\"[^\\\"]*\\\"//g\"); if printf '%s' \"$bare\" | grep -qE '(^|[^A-Za-z0-9_./-])(sed|perl)[[:space:]]+[^|;&]*(-[A-Za-z]*i|--in-place)'; then echo \"$msg\" >&2; exit 2; fi; if printf '%s' \"$cmd\" | grep -qE '(^|[^A-Za-z0-9_./-])(python[0-9.]*|perl|node|ruby)([[:space:]]|$)' && printf '%s' \"$cmd\" | grep -qE '([[:space:]]-[ce][[:space:]]|<<)' && printf '%s' \"$cmd\" | grep -qE \"open\\([^)]*,[[:space:]]*(mode=)?['\\\"][wax][bt+]*['\\\"]|\\.open\\(['\\\"][wax]|open\\([^)]*['\\\"]>|write_text\\(|write_bytes\\(|os\\.(replace|rename)\\(|shutil\\.(move|copy)|writeFile(Sync)?\\(|File\\.(write|open)\"; then echo \"$msg\" >&2; exit 2; fi; targets=$(printf '%s' \"$bare\" | grep -oE '((^|[^0-9&<>])>{1,2}|(^|[^A-Za-z0-9_./-])tee([[:space:]]+-[a-z]+)*)[[:space:]]*[^[:space:];&|)(<>]+' | sed -E 's/^.*(>{1,2}|tee([[:space:]]+-[a-z]+)*)[[:space:]]*//' | grep -vE '^(/dev/|/tmp/|/private/tmp/|\\$TMPDIR|[0-9]+$)|scratchpad' || true); if [ -n \"$targets\" ]; then echo \"$msg\" >&2; exit 2; fi"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+Notes:
+
+- The sed and redirect checks ignore quoted text, so `grep 'sed -i'` and
+  `awk '$3 > 100'` pass. An unbalanced quote in a heredoc body can hide a
+  redirect after it.
+- The guard matches inline code only with `-c`, `-e` or a heredoc, and only when
+  it contains a write call (`open(..., "w")`, `write_text`, `os.replace`,
+  `shutil.copy`, `writeFileSync` and the like). It does not match a script run
+  from a file: writing the file needs the Write tool, which runs the hooks.
+- The guard reads the reason's presence, not its content; jarl reads the
+  content.
