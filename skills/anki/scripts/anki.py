@@ -537,7 +537,8 @@ def write_approval(
     print(f"wrote {out}: {len(rows)} entries, {sum(r['cards'] for r in rows)} cards")
     print(
         'Claude Code: publish it with the Artifact tool, capabilities {"db": {}}; read'
-        ' jarl\'s choices from collection "approval", document "cards".'
+        ' jarl\'s choices from collection "approval", document "cards": "notes" maps'
+        ' card id to note, "dropped" maps card id to true or false.'
     )
 
 

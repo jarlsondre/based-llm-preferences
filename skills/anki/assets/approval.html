@@ -136,8 +136,13 @@ window.MathJax = {tex:{inlineMath:[["\\(","\\)"]],displayMath:[["\\[","\\]"]]},s
   var ASKED = ["directly", "indirectly", "never"];
   var ASKED_LABEL = {directly:"asked in an exam", indirectly:"close to an exam question", never:"in no exam"};
   ROWS.forEach(function(r){ r.asked = r.asked || "never"; });
+  // state is what the page believes, keyed by card id. pending counts local changes per key
+  // ("n:<id>" note, "d:<id>" dropped, "general") that the store has not confirmed; the store
+  // never overrides a pending key. inflight holds the counts sent in the write in progress.
   var state = {dropped:{}, notes:{}, general:""};
-  var db = null, saving = false, dirty = false, timer = null, latest = null, saveEl = null;
+  var pending = {}, inflight = null, exists = false, confirmedAt = null;
+  var db = null, timer = null, saveEl = null, unsubscribe = null;
+  var LS = "anki-approval:" + (DATA.subtitle || "") + ":" + ROWS.length;
   var LOCAL_ONLY = "Saved in this browser only. Paste the text box to Claude.";
   function $(id){ return document.getElementById(id); }
   function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
@@ -211,6 +216,21 @@ window.MathJax = {tex:{inlineMath:[["\\(","\\)"]],displayMath:[["\\[","\\]"]]},s
     });
     $("sections").innerHTML = html;
   }
+  function touch(k){ pending[k] = (pending[k] || 0) + 1; }
+  // The viewer can restore typed text and ticks after a reload without firing any event.
+  // Whatever the boxes hold that the state does not know is taken as typed, and saved.
+  // At startup the boxes are blank unless the viewer filled them, so only a filled box or an
+  // unticked card counts then; later, every difference does.
+  function seedFromDom(startup){
+    ROWS.forEach(function(r, i){
+      var v = $("n-" + i).value;
+      if (v !== (state.notes[r.id] || "") && (v || (!startup && state.notes[r.id] !== undefined))){ state.notes[r.id] = v; touch("n:" + r.id); }
+      var drop = !$("k-" + i).checked;
+      if (drop !== !!state.dropped[r.id] && (drop || !startup)){ state.dropped[r.id] = drop; touch("d:" + r.id); }
+    });
+    var g = $("general").value;
+    if (g !== (state.general || "") && (g || !startup)){ state.general = g; touch("general"); }
+  }
   function render(){
     var total = 0, fresh = 0, old = 0, asked = {directly:0, indirectly:0, never:0};
     var per = GROUPS.map(function(){ return {kept:0, all:0}; }), decks = SUBDECKS.map(function(){ return 0; });
@@ -218,8 +238,9 @@ window.MathJax = {tex:{inlineMath:[["\\(","\\)"]],displayMath:[["\\[","\\]"]]},s
       var drop = !!state.dropped[r.id], g = per[GROUPS.indexOf(r.section)];
       $("r-" + i).classList.toggle("dropped", drop);
       $("k-" + i).checked = !drop;
-      var note = $("n-" + i);
-      if (document.activeElement !== note) note.value = state.notes[r.id] || "";
+      var note = $("n-" + i), v = state.notes[r.id];
+      // A box is only ever set from a value the state knows; an unknown box keeps its text.
+      if (v !== undefined && document.activeElement !== note && note.value !== v) note.value = v;
       g.all += r.cards;
       if (drop) return;
       g.kept += r.cards; total += r.cards; asked[r.asked] += r.cards;
@@ -231,7 +252,7 @@ window.MathJax = {tex:{inlineMath:[["\\(","\\)"]],displayMath:[["\\[","\\]"]]},s
     $("s-days").textContent = days(Math.max.apply(null, decks));
     per.forEach(function(g, gi){ $("gc-" + gi).textContent = g.kept + " of " + g.all + " cards kept"; });
     var general = $("general");
-    if (document.activeElement !== general) general.value = state.general || "";
+    if (document.activeElement !== general && general.value !== (state.general || "")) general.value = state.general || "";
     var dropped = ROWS.filter(function(r){ return state.dropped[r.id]; });
     var lines = ["Kept " + total + " cards, dropped " + dropped.length + " entries."];
     if (dropped.length) lines.push("Dropped: " + dropped.map(function(r){ return r.id; }).join(", "));
@@ -240,79 +261,165 @@ window.MathJax = {tex:{inlineMath:[["\\(","\\)"]],displayMath:[["\\[","\\]"]]},s
     $("summary").value = lines.join("\n");
     return total;
   }
-  function body(total){
-    var notes = {};
-    ROWS.forEach(function(r){ if (state.notes[r.id]) notes[r.id] = state.notes[r.id]; });
-    return {dropped:ROWS.filter(function(r){ return state.dropped[r.id]; }).map(function(r){ return r.id; }), notes:notes,
-            general:state.general, keptCards:total, savedAt:new Date().toISOString()};
+  // The whole document: notes and dropped are maps by card id, so a merge write changes one key.
+  function fullBody(){
+    var notes = {}, dropped = {}, kept = 0;
+    ROWS.forEach(function(r){
+      notes[r.id] = state.notes[r.id] || ""; dropped[r.id] = !!state.dropped[r.id];
+      if (!state.dropped[r.id]) kept += r.cards;
+    });
+    return {notes:notes, dropped:dropped, general:state.general || "", keptCards:kept, savedAt:new Date().toISOString()};
   }
-  function apply(d){
+  function partBody(keys){
+    var body = {notes:{}, dropped:{}, savedAt:new Date().toISOString()}, full = fullBody();
+    keys.forEach(function(k){
+      if (k.slice(0, 2) === "n:") body.notes[k.slice(2)] = full.notes[k.slice(2)];
+      else if (k.slice(0, 2) === "d:") body.dropped[k.slice(2)] = full.dropped[k.slice(2)];
+      else if (k === "general") body.general = full.general;
+    });
+    body.keptCards = full.keptCards;
+    return body;
+  }
+  // Take the store's values for every key this page has no unconfirmed change on. A local value
+  // the store has never seen is marked pending, so it gets written instead of forgotten.
+  function applyServer(d){
+    var notes = d.notes || {}, dropped = d.dropped || {};
+    ROWS.forEach(function(r){
+      if (!pending["n:" + r.id]){
+        if (typeof notes[r.id] === "string") state.notes[r.id] = notes[r.id];
+        else if (state.notes[r.id]) touch("n:" + r.id);
+      }
+      if (!pending["d:" + r.id]){
+        if (typeof dropped[r.id] === "boolean") state.dropped[r.id] = dropped[r.id];
+        else if (state.dropped[r.id]) touch("d:" + r.id);
+      }
+    });
+    if (!pending.general){
+      if (typeof d.general === "string") state.general = d.general;
+      else if (state.general) touch("general");
+    }
+  }
+  function applyLocal(d){
     if (!d) return;
-    state.dropped = {}; (d.dropped || []).forEach(function(id){ state.dropped[id] = true; });
-    state.notes = d.notes || {}; state.general = d.general || "";
+    var notes = d.notes || {}, dropped = d.dropped || {};
+    ROWS.forEach(function(r){
+      if (typeof notes[r.id] === "string") state.notes[r.id] = notes[r.id];
+      if (typeof dropped[r.id] === "boolean") state.dropped[r.id] = dropped[r.id];
+    });
+    if (typeof d.general === "string") state.general = d.general;
+  }
+  function status(){
+    var n = Object.keys(pending).length;
+    if (!db){ saveEl.textContent = LOCAL_ONLY; return; }
+    if (n || inflight){ saveEl.textContent = "Saving " + (n || Object.keys(inflight).length) + " change" + (n === 1 ? "" : "s"); return; }
+    var notes = 0, dropped = 0;
+    ROWS.forEach(function(r){ if (state.notes[r.id]) notes++; if (state.dropped[r.id]) dropped++; });
+    saveEl.textContent = confirmedAt
+      ? "Saved at " + confirmedAt + ". Claude sees " + notes + " note" + (notes === 1 ? "" : "s") + " and " + dropped + " dropped."
+      : "Nothing saved yet.";
   }
   function changed(){
-    latest = body(render()); dirty = true;
-    try { localStorage.setItem(LS, JSON.stringify(latest)); } catch(e){}
-    clearTimeout(timer); timer = setTimeout(flush, 700);
-    saveEl.textContent = "Saving";
+    seedFromDom(); render();
+    try { localStorage.setItem(LS, JSON.stringify(fullBody())); } catch(e){}
+    clearTimeout(timer); timer = setTimeout(flush, 500);
+    status();
   }
   function flush(){
-    if (!db){ saveEl.textContent = LOCAL_ONLY; dirty = false; return; }
-    if (saving || !dirty) return;
-    saving = true; dirty = false;
-    db.doc(DOC).set(latest).then(function(){
-      saving = false; saveEl.textContent = "Saved. Claude can read these choices.";
-      if (dirty) flush();
-    }, function(){
-      saving = false; saveEl.textContent = "Saved in this browser only. Paste the text box to Claude.";
+    clearTimeout(timer);
+    if (!db || inflight) return;
+    var keys = Object.keys(pending);
+    if (!keys.length){ status(); return; }
+    var counts = {};
+    keys.forEach(function(k){ counts[k] = pending[k]; });
+    inflight = counts;
+    var write = exists ? db.doc(DOC).update(partBody(keys)) : db.doc(DOC).set(fullBody());
+    var done = false;
+    // A write that never answers must not block every later write.
+    var guard = setTimeout(function(){ if (!done){ done = true; inflight = null; saveEl.textContent = "The store did not answer. Retrying."; setTimeout(flush, 2000); } }, 15000);
+    write.then(function(){
+      if (done) return;
+      done = true; clearTimeout(guard); exists = true; inflight = null;
+      keys.forEach(function(k){ pending[k] -= counts[k]; if (pending[k] <= 0) delete pending[k]; });
+      confirmedAt = new Date().toTimeString().slice(0, 8);
+      status();
+      if (Object.keys(pending).length) flush();
+    }, function(e){
+      if (done) return;
+      done = true; clearTimeout(guard); inflight = null;
+      var code = e && e.code ? e.code : "error";
+      if (code === "invalid_argument" && exists){ exists = false; flush(); return; }
+      saveEl.textContent = "Could not save (" + code + "). Retrying. The text box below always holds your choices.";
+      setTimeout(flush, 3000);
+    });
+  }
+  function connect(ns){
+    db = ns;
+    unsubscribe = db.doc(DOC).onSnapshot(function(snap){
+      exists = snap.exists;
+      seedFromDom();
+      applyServer(snap.exists ? snap.data() : {});
+      if (snap.exists && !snap.metadata.hasPendingWrites && !inflight && !confirmedAt) confirmedAt = new Date().toTimeString().slice(0, 8);
+      render(); status();
+      if (Object.keys(pending).length && !inflight) flush();
+    }, function(e){
+      saveEl.textContent = "Lost the connection to the store (" + (e && e.code ? e.code : "error") + "). Reload the page; the text box below always holds your choices.";
     });
   }
 
-  buildChrome();
-  buildSections();
-  try { apply(JSON.parse(localStorage.getItem(LS) || "null")); } catch(e){}
-  render();
+  function start(hot){
+    buildChrome();
+    buildSections();
+    if (hot && hot.state){ state = hot.state; pending = hot.pending || {}; }
+    else { try { applyLocal(JSON.parse(localStorage.getItem(LS) || "null")); } catch(e){} }
+    seedFromDom(true);
+    render();
+    saveEl.textContent = "Loading saved choices";
+    var c = window.claude;
+    if (c && c.hot && c.hot.snapshot) c.hot.snapshot(function(){ return {state:state, pending:pending}; });
+    if (c && c.use){
+      c.use("db").then(function(ns){
+        if (!ns){ saveEl.textContent = LOCAL_ONLY; return; }
+        connect(ns);
+      }).catch(function(){ saveEl.textContent = LOCAL_ONLY; });
+    } else {
+      saveEl.textContent = LOCAL_ONLY;
+    }
+  }
 
   document.addEventListener("change", function(e){
     var t = e.target;
     if (t.id === "hide-dropped"){ document.body.classList.toggle("hide-dropped", t.checked); }
-    else if (t.type === "checkbox" && t.dataset.i !== undefined){ state.dropped[ROWS[t.dataset.i].id] = !t.checked; changed(); }
+    else if (t.type === "checkbox" && t.dataset.i !== undefined){ var r = ROWS[t.dataset.i]; state.dropped[r.id] = !t.checked; touch("d:" + r.id); changed(); }
   });
   document.addEventListener("input", function(e){
     var t = e.target;
-    if (t.classList.contains("note")){ state.notes[ROWS[t.dataset.i].id] = t.value; changed(); }
-    else if (t.id === "general"){ state.general = t.value; changed(); }
+    if (t.classList.contains("note")){ var r = ROWS[t.dataset.i]; state.notes[r.id] = t.value; touch("n:" + r.id); changed(); }
+    else if (t.id === "general"){ state.general = t.value; touch("general"); changed(); }
   });
+  function setDropped(rows, drop){
+    rows.forEach(function(r){ if (!!state.dropped[r.id] !== drop){ state.dropped[r.id] = drop; touch("d:" + r.id); } });
+    changed();
+  }
   document.addEventListener("click", function(e){
     var t = e.target;
     if (t.dataset && t.dataset.bulk){
       var key = GROUPS[t.dataset.g];
-      ROWS.forEach(function(r){ if (r.section === key) state.dropped[r.id] = t.dataset.bulk === "drop"; });
-      changed();
+      setDropped(ROWS.filter(function(r){ return r.section === key; }), t.dataset.bulk === "drop");
     } else if (t.id === "keep-all" || t.id === "drop-all"){
-      ROWS.forEach(function(r){ state.dropped[r.id] = t.id === "drop-all"; });
-      changed();
+      setDropped(ROWS, t.id === "drop-all");
     } else if (t.id === "keep-directly" || t.id === "keep-seen"){
-      ROWS.forEach(function(r){ state.dropped[r.id] = r.asked === "never" || (t.id === "keep-directly" && r.asked !== "directly"); });
+      ROWS.forEach(function(r){
+        var drop = r.asked === "never" || (t.id === "keep-directly" && r.asked !== "directly");
+        if (!!state.dropped[r.id] !== drop){ state.dropped[r.id] = drop; touch("d:" + r.id); }
+      });
       changed();
     }
   });
+  // Leaving the tab must not lose a change that is still waiting for the debounce.
+  document.addEventListener("visibilitychange", function(){ if (document.hidden) flush(); });
 
-  var c = window.claude;
-  if (c && c.use){
-    c.use("db").then(function(ns){
-      if (!ns){ saveEl.textContent = LOCAL_ONLY; return; }
-      db = ns;
-      return db.doc(DOC).get().then(function(snap){
-        if (snap.exists && !dirty){ apply(snap.data()); render(); }
-        saveEl.textContent = snap.exists ? "Saved choices loaded." : "Nothing saved yet.";
-        if (dirty) flush();
-      });
-    }).catch(function(){ saveEl.textContent = LOCAL_ONLY; });
-  } else {
-    saveEl.textContent = LOCAL_ONLY;
-  }
+  var hotApi = window.claude && window.claude.hot;
+  if (hotApi && hotApi.ready) hotApi.ready(start); else start(hotApi && hotApi.data);
 })();
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg-full.min.js"></script>
