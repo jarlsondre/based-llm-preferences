@@ -428,3 +428,70 @@ Notes:
   from a file: writing the file needs the Write tool, which runs the hooks.
 - The guard reads the reason's presence, not its content; jarl reads the
   content.
+
+---
+
+## 12. Fetch guard: blocked pages go to the fetch skill
+
+Two hooks on the built-in WebSearch and WebFetch tools. Before the call, the
+guard denies a URL, query or domain filter that names reddit, and the reason
+gives the two fetch commands. After the call, the guard looks for a block
+signature at the start of the result or error:
+
+- HTTP 401 or 403;
+- "not accessible to our user agent" or "Access denied";
+- a Cloudflare "Just a moment" page or "enable JavaScript";
+- "log in to continue".
+
+On a match it adds one line: the fetch skill gets past some of these, and how to
+run it.
+
+Merge into `~/.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "WebSearch|WebFetch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v jq >/dev/null || { echo 'hook: jq missing; install a static jq binary into ~/.local/bin (no sudo needed)' >&2; exit 2; }; t=$(jq -r '[.tool_input.url, .tool_input.query, .tool_input.allowed_domains] | tostring'); if printf '%s' \"$t\" | grep -qi 'reddit'; then printf '%s' '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"fetch skill: Reddit blocks the built-in search and fetch. Thread: uv run ~/.claude/skills/fetch/scripts/fetch.py URL. Search: uv run ~/.claude/skills/fetch/scripts/fetch.py \\\"https://www.reddit.com/search.json?q=TERMS\\\"\"}}'; fi"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "WebSearch|WebFetch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v jq >/dev/null || { echo 'hook: jq missing; install a static jq binary into ~/.local/bin (no sudo needed)' >&2; exit 2; }; in=$(cat); ev=$(printf '%s' \"$in\" | jq -r '.hook_event_name // \"PostToolUse\"'); t=$(printf '%s' \"$in\" | jq -r '[.tool_response, .error] | tostring' | head -c 400); if printf '%s' \"$t\" | grep -qiE 'HTTP 40[13]|40[13] Forbidden|not accessible to our user agent|access denied|just a moment\\.\\.\\.|enable javascript|(log|sign) in to continue|robots\\.txt'; then printf '{\"hookSpecificOutput\":{\"hookEventName\":\"%s\",\"additionalContext\":\"fetch skill: this looks like a bot block or a login wall. The fetch skill loads the page in a real browser, which gets past some of these: uv run ~/.claude/skills/fetch/scripts/fetch.py URL. A login wall needs jarl to run it once with --login. If the skill is blocked too, say the page is unreachable.\"}}' \"$ev\"; fi"
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "WebSearch|WebFetch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v jq >/dev/null || { echo 'hook: jq missing; install a static jq binary into ~/.local/bin (no sudo needed)' >&2; exit 2; }; in=$(cat); ev=$(printf '%s' \"$in\" | jq -r '.hook_event_name // \"PostToolUse\"'); t=$(printf '%s' \"$in\" | jq -r '[.tool_response, .error] | tostring' | head -c 400); if printf '%s' \"$t\" | grep -qiE 'HTTP 40[13]|40[13] Forbidden|not accessible to our user agent|access denied|just a moment\\.\\.\\.|enable javascript|(log|sign) in to continue|robots\\.txt'; then printf '{\"hookSpecificOutput\":{\"hookEventName\":\"%s\",\"additionalContext\":\"fetch skill: this looks like a bot block or a login wall. The fetch skill loads the page in a real browser, which gets past some of these: uv run ~/.claude/skills/fetch/scripts/fetch.py URL. A login wall needs jarl to run it once with --login. If the skill is blocked too, say the page is unreachable.\"}}' \"$ev\"; fi"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+Notes:
+
+- The Reddit denial is firm because the built-in tools fail there every time.
+  The block nudge is advice: it says "some", and the skill tells the agent what
+  to do when the site blocks the fetch too.
+- The guard matches only the first 400 characters of a result, so an article
+  that mentions "access denied" further down passes.

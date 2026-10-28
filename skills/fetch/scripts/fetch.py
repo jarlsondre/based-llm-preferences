@@ -4,14 +4,15 @@
 # ///
 """Fetch a page the built-in fetch cannot get (login wall, bot block) and print it as text.
 
-Usage: uv run tools/fetch.py URL [--max-chars N] [--depth N] [--limit N]
-       uv run tools/fetch.py --login URL   # opens a window; log in, then press Enter
+Usage: uv run ~/.claude/skills/fetch/scripts/fetch.py URL [--max-chars N] [--depth N] [--limit N]
+       uv run ~/.claude/skills/fetch/scripts/fetch.py --login URL   # opens a window; log in, then press Enter
 
 The page loads in headless Firefox. The profile in ~/.local/share/jarl-fetch
-keeps logins: one --login per site per machine. Reddit threads print as one
-line per comment, other pages as their visible text. --depth (reply levels) and
---limit (comments fetched) apply to Reddit threads only. Once per machine:
-uv run --with playwright playwright install firefox
+keeps logins: one --login per site per machine. A Reddit thread prints as one
+line per comment, a Reddit search (https://www.reddit.com/search.json?q=TERMS)
+as one line per thread, other pages as their visible text. --depth (reply
+levels) and --limit (comments or threads fetched) apply to Reddit only. Once
+per machine: uv run --with playwright playwright install firefox
 """
 
 import argparse
@@ -35,7 +36,7 @@ def reddit_text(ctx: BrowserContext, url: str, depth: int, limit: int) -> str:
     resp = ctx.request.get(api)
     if not resp.ok:
         sys.exit(
-            f"fetch.py: reddit returned {resp.status} for {api}; on 403, run: uv run tools/fetch.py --login URL"
+            f"fetch.py: reddit returned {resp.status} for {api}; on 403, jarl runs: uv run ~/.claude/skills/fetch/scripts/fetch.py --login URL"
         )
     listing = resp.json()
     post = listing[0]["data"]["children"][0]["data"]
@@ -63,6 +64,25 @@ def reddit_text(ctx: BrowserContext, url: str, depth: int, limit: int) -> str:
     return "\n".join(lines)
 
 
+def reddit_search_text(ctx: BrowserContext, url: str, limit: int) -> str:
+    """One line per thread: score, comment count, subreddit, title, URL."""
+    sep = "&" if "?" in url else "?"
+    api = url + f"{sep}limit={limit}&raw_json=1"
+    resp = ctx.request.get(api)
+    if not resp.ok:
+        sys.exit(f"fetch.py: reddit returned {resp.status} for {api}")
+    lines = []
+    for child in resp.json()["data"]["children"]:
+        if child["kind"] != "t3":
+            continue
+        d = child["data"]
+        lines.append(
+            f"[{d.get('score', 0)}] {d.get('num_comments', 0)} comments r/{d.get('subreddit', '?')}: "
+            f"{d.get('title', '')}  https://www.reddit.com{d.get('permalink', '')}"
+        )
+    return "\n".join(lines) if lines else "fetch.py: no threads found"
+
+
 def page_text(ctx: BrowserContext, url: str) -> str:
     page = ctx.new_page()
     page.goto(url, wait_until="domcontentloaded", timeout=60000)
@@ -83,20 +103,27 @@ def main() -> None:
     ap.add_argument("--limit", type=int, default=100)
     args = ap.parse_args()
     with sync_playwright() as pw:
-        ctx = pw.firefox.launch_persistent_context(
-            PROFILE, headless=not args.login, user_agent=UA
-        )
+        try:
+            ctx = pw.firefox.launch_persistent_context(
+                PROFILE, headless=not args.login, user_agent=UA
+            )
+        except Exception as exc:  # noqa: BLE001  # any launch failure gets the install hint
+            sys.exit(
+                "fetch.py: Firefox did not start. Once per machine: "
+                "uv run --with playwright playwright install firefox\n"
+                f"({str(exc).strip().splitlines()[0]})"
+            )
         if args.login:
             ctx.new_page().goto(args.url)
             input("Log in in the browser window, then press Enter here: ")
             ctx.close()
             return
-        is_reddit = "reddit.com/r/" in args.url and "/comments/" in args.url
-        out = (
-            reddit_text(ctx, args.url, args.depth, args.limit)
-            if is_reddit
-            else page_text(ctx, args.url)
-        )
+        if "reddit.com/r/" in args.url and "/comments/" in args.url:
+            out = reddit_text(ctx, args.url, args.depth, args.limit)
+        elif "reddit.com/search" in args.url:
+            out = reddit_search_text(ctx, args.url, args.limit)
+        else:
+            out = page_text(ctx, args.url)
         ctx.close()
     if len(out) > args.max_chars:
         out = (
