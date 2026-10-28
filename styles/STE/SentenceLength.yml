@@ -1,0 +1,8 @@
+# language.md section 2, STE rules 5.1 and 6.3. Adapted from Syntaf/vale-llm-slop (MIT, see LICENSE).
+extends: occurrence
+message: "Sentence has %d words. The limit is 25, and 20 for an instruction."
+link: https://github.com/jarlsondre/based-llm-preferences/blob/main/language.md
+level: error
+scope: sentence
+max: 25
+token: '[\w''’-]+'

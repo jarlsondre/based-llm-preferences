@@ -1,0 +1,9 @@
+# language.md section 2, STE rule 3.6. Adapted from Syntaf/vale-llm-slop (MIT, see LICENSE).
+extends: sequence
+message: "Passive voice. Name who acts and use the active voice."
+link: https://github.com/jarlsondre/based-llm-preferences/blob/main/language.md
+level: error
+tokens:
+  - pattern: '(?i)\b(?:am|is|are|was|were|be|been|being)\b'
+  - tag: VBN
+    skip: 2

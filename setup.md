@@ -16,8 +16,8 @@ missing command-line tool; install what it names. After pulling this repo, run
 it again and tell jarl what it changed. A setting or skill meant for every
 machine goes into hooks.md or skills/, never into one machine by hand.
 
-LSP plugins are installed by hand. Get the binaries first:
-`brew install pyright` on macOS or `npm install -g pyright` elsewhere, and
+Install LSP plugins by hand. Get the binaries first: `brew install pyright` on
+macOS or `npm install -g pyright` elsewhere, and
 `rustup component add rust-analyzer`. Then:
 
 ```sh
@@ -46,6 +46,6 @@ cp "$PREFS/skills/python/assets/"* .   # Python projects only
   `ln` line.
 - The project owns the copied files: extend and commit them.
 - Never recreate any of these files from memory.
-- The project's committed `.claude/settings.json` holds two things: the
-  `attribution` object from hooks.md section 8 and, in a project that produces
+- The project's committed `.claude/settings.json` holds two things. The
+  `attribution` object from hooks.md section 8, and, in a project that produces
   results, guard 4 (hooks.md section 4). No other guard goes in it.

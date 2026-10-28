@@ -12,7 +12,7 @@ The tool merges every JSON block that follows the exact line "Merge into
 instruction to merge by hand. Every guard command starts with the same `jq`
 check, `command -v jq >/dev/null || { echo 'hook: jq missing`; the tool removes
 any installed hook that starts with it and is no longer in this file. A setting
-that should hold on every machine is added here as such a block, never set by
+that should hold on every machine goes here as such a block; never set it by
 hand on one machine.
 
 Never retype a guard from memory. Never put these guards in a project's
@@ -34,8 +34,8 @@ becomes a block.
 
 ## 1. Approval guard: Slurm and gh
 
-Enforces section 1 of the cluster skill (no job submission without a yes) and
-the gh rule in workflow.md. Any Bash command containing `sbatch`, `srun`,
+Enforces the gh rule in workflow.md and section 1 of the cluster skill (no job
+submission without a yes). Any Bash command containing `sbatch`, `srun`,
 `salloc`, or `gh` as a word triggers a permission prompt for jarl.
 
 Merge into `~/.claude/settings.json`:
@@ -64,9 +64,9 @@ Merge into `~/.claude/settings.json`:
 
 Notes:
 
-- The guard matches the words anywhere in the command, so
-  `cd work && sbatch job.sh` is caught. A permission rule like `Bash(sbatch *)`
-  checks only the leading command; do not replace the hook with one.
+- The guard matches the words anywhere in the command, so it catches
+  `cd work && sbatch job.sh`. A permission rule like `Bash(sbatch *)` checks
+  only the leading command; do not replace the hook with one.
 
 ---
 
@@ -99,7 +99,7 @@ Merge into `~/.claude/settings.json`:
 Notes:
 
 - Missing `uv` fails loudly through the tool calls themselves.
-- Both tools always run, and only failing output is reported.
+- Both tools always run; the hook reports only failing output.
 - ruff resolves the nearest config, so the project's own `ruff.toml` applies;
   without one, ruff defaults apply.
 - Keep ty's `--project` flag: it finds the file's project venv from any cwd,
@@ -109,9 +109,9 @@ Notes:
 
 ## 3. Language guard: Vale on every markdown edit
 
-Enforces language.md. After every edit to a `.md` file, Vale runs on it using
-the nearest `.vale.ini` found upward from the file, and findings come back as a
-blocking error. With no `.vale.ini` above the file, the file passes unchecked.
+Enforces language.md. After every edit to a `.md` file, Vale runs on it with the
+nearest `.vale.ini` found upward from the file. Findings come back as a blocking
+error. With no `.vale.ini` above the file, the file passes unchecked.
 
 Merge into `~/.claude/settings.json`:
 
@@ -124,7 +124,7 @@ Merge into `~/.claude/settings.json`:
         "hooks": [
           {
             "type": "command",
-            "command": "command -v jq >/dev/null || { echo 'hook: jq missing; install a static jq binary into ~/.local/bin (no sudo needed)' >&2; exit 2; }; f=$(jq -r '.tool_input.file_path // empty'); case \"$f\" in *.md) d=$(cd \"$(dirname \"$f\")\" && pwd); cfg=\"\"; while :; do { [ -e \"$d/.vale.ini\" ] || [ -L \"$d/.vale.ini\" ]; } && { cfg=\"$d/.vale.ini\"; break; }; [ \"$d\" = \"/\" ] && break; d=$(dirname \"$d\"); done; [ -n \"$cfg\" ] || exit 0; command -v vale >/dev/null || { echo 'hook: vale missing; install per language.md section 4' >&2; exit 2; }; out=$(vale --config \"$cfg\" --output line \"$f\" 2>&1) || { printf '%s\\n' \"$out\" >&2; exit 2; } ;; esac"
+            "command": "command -v jq >/dev/null || { echo 'hook: jq missing; install a static jq binary into ~/.local/bin (no sudo needed)' >&2; exit 2; }; f=$(jq -r '.tool_input.file_path // empty'); case \"$f\" in *.md) d=$(cd \"$(dirname \"$f\")\" && pwd); cfg=\"\"; while :; do { [ -e \"$d/.vale.ini\" ] || [ -L \"$d/.vale.ini\" ]; } && { cfg=\"$d/.vale.ini\"; break; }; [ \"$d\" = \"/\" ] && break; d=$(dirname \"$d\"); done; [ -n \"$cfg\" ] || exit 0; command -v vale >/dev/null || { echo 'hook: vale missing; install per language.md section 5' >&2; exit 2; }; out=$(vale --config \"$cfg\" --output line \"$f\" 2>&1) || { printf '%s\\n' \"$out\" >&2; exit 2; } ;; esac"
           }
         ]
       }
@@ -144,10 +144,10 @@ Notes:
 
 ## 4. Reporting guard: no stopping with unwritten results
 
-Enforces reporting.md rule 11. The first attempt to end a turn is blocked with a
-reminder to write unwritten results to the report or its inbox; the second goes
-through (`stop_hook_active`). This guard is per project: install it only in
-projects that produce results.
+Enforces reporting.md rule 11. The hook blocks the first attempt to end a turn
+with a reminder to write unwritten results to the report or its inbox. The
+second attempt goes through (`stop_hook_active`). This guard is per project:
+install it only in projects that produce results.
 
 Merge into the project's `.claude/settings.json`:
 
@@ -170,18 +170,22 @@ Merge into the project's `.claude/settings.json`:
 
 Notes:
 
-- The bounce fires whether or not results were produced; the agent judges.
+- The bounce fires whether or not the turn produced results; the agent judges.
 
 ---
 
 ## 5. Secrets guard: no reading or printing secrets
 
-Enforces the secrets rule in workflow.md section 2. Any Bash command, Read, or
-Grep whose input names a secret-holding file (`.env` and `.envrc` files,
-`.secrets*`, ssh private keys, cloud credentials) or a secret-shaped variable,
-or dumps the environment with a bare `env`, `printenv` or `set`, is denied, with
-no approval case. One command passes: `has_secret` with variable names and
-nothing else on the line.
+Enforces the secrets rule in workflow.md section 2. The guard denies three
+inputs, with no approval case:
+
+- a Bash command, Read or Grep that names a secret-holding file (`.env` and
+  `.envrc` files, `.secrets*`, ssh private keys, cloud credentials);
+- one that names a secret-shaped variable;
+- a bare `env`, `printenv` or `set`, which dumps the environment.
+
+One command passes: `has_secret` with variable names and nothing else on the
+line.
 
 Merge into `~/.claude/settings.json`:
 
@@ -211,18 +215,18 @@ Notes:
   only when `CLAUDECODE` is unset.
 - Secret-shaped means `API_KEY`, `_TOKEN`, `_SECRET` or `PASSWORD` in uppercase
   at the end of a name, so `MAX_TOKENS` and `--max-tokens` pass.
-- `has_secret` is `tools/has_secret.py`, linked into `~/.local/bin` by
-  `tools/machine.py`. The exception is the whole command: a pipe, `;`, `&&`, a
-  redirect or `$(...)` after it is denied.
-- The pattern matches the whole tool input, so a Grep into a secret file is
-  caught by its path.
+- `has_secret` is `tools/has_secret.py`; `tools/machine.py` links it into
+  `~/.local/bin`. The exception is the whole command: the guard denies a pipe,
+  `;`, `&&`, a redirect or `$(...)` after it.
+- The pattern matches the whole tool input, so a Grep into a secret file fails
+  on its path.
 
 ---
 
 ## 6. Approval guard: destructive commands
 
 Any Bash command matching a destructive pattern triggers a permission prompt for
-jarl: recursive force delete (`rm -rf` and its flag variants),
+jarl. The patterns: recursive force delete (`rm -rf` and its flag variants),
 `git reset --hard`, force push, piping a download into a shell
 (`curl ... | sh`), and `chmod 777`.
 
@@ -251,8 +255,8 @@ Merge into `~/.claude/settings.json`:
 ## 7. Lint guard: Vale and chktex on every LaTeX edit
 
 Guard 3 for LaTeX. After every edit to a `.tex` file, Vale runs with the nearest
-`.vale.ini` (whose `[*.tex]` section applies the language rules), then chktex
-checks the LaTeX itself; findings from either come back as a blocking error.
+`.vale.ini`, whose `[*.tex]` section applies the language rules. Then chktex
+checks the LaTeX itself. Findings from either come back as a blocking error.
 
 Merge into `~/.claude/settings.json`:
 
@@ -265,7 +269,7 @@ Merge into `~/.claude/settings.json`:
         "hooks": [
           {
             "type": "command",
-            "command": "command -v jq >/dev/null || { echo 'hook: jq missing; install a static jq binary into ~/.local/bin (no sudo needed)' >&2; exit 2; }; f=$(jq -r '.tool_input.file_path // empty'); case \"$f\" in *.tex) d=$(cd \"$(dirname \"$f\")\" && pwd); cfg=\"\"; while :; do { [ -e \"$d/.vale.ini\" ] || [ -L \"$d/.vale.ini\" ]; } && { cfg=\"$d/.vale.ini\"; break; }; [ \"$d\" = \"/\" ] && break; d=$(dirname \"$d\"); done; [ -n \"$cfg\" ] || exit 0; command -v vale >/dev/null || { echo 'hook: vale missing; install per language.md section 4' >&2; exit 2; }; command -v chktex >/dev/null || { echo 'hook: chktex missing; install TeX Live' >&2; exit 2; }; out=$(vale --config \"$cfg\" --output line \"$f\" 2>&1) || { printf '%s\\n' \"$out\" >&2; exit 2; }; cout=$(chktex -q \"$f\" 2>&1) || { printf '%s\\n' \"$cout\" >&2; exit 2; } ;; esac"
+            "command": "command -v jq >/dev/null || { echo 'hook: jq missing; install a static jq binary into ~/.local/bin (no sudo needed)' >&2; exit 2; }; f=$(jq -r '.tool_input.file_path // empty'); case \"$f\" in *.tex) d=$(cd \"$(dirname \"$f\")\" && pwd); cfg=\"\"; while :; do { [ -e \"$d/.vale.ini\" ] || [ -L \"$d/.vale.ini\" ]; } && { cfg=\"$d/.vale.ini\"; break; }; [ \"$d\" = \"/\" ] && break; d=$(dirname \"$d\"); done; [ -n \"$cfg\" ] || exit 0; command -v vale >/dev/null || { echo 'hook: vale missing; install per language.md section 5' >&2; exit 2; }; command -v chktex >/dev/null || { echo 'hook: chktex missing; install TeX Live' >&2; exit 2; }; out=$(vale --config \"$cfg\" --output line \"$f\" 2>&1) || { printf '%s\\n' \"$out\" >&2; exit 2; }; cout=$(chktex -q \"$f\" 2>&1) || { printf '%s\\n' \"$cout\" >&2; exit 2; } ;; esac"
           }
         ]
       }
@@ -353,9 +357,10 @@ Notes:
 
 ## 10. Attribution guard: no AI trailer in commits
 
-Enforces the no-AI-attribution rule in workflow.md section 1 where the settings
-in section 8 are missing or ignored. A `git commit` command whose text carries a
-Claude co-author trailer, a "generated with" line, or a session link is denied.
+Enforces the no-AI-attribution rule in workflow.md section 1 on a machine that
+lacks or ignores the settings in section 8. The guard denies a `git commit`
+command whose text carries a Claude co-author trailer, a "generated with" line,
+or a session link.
 
 Merge into `~/.claude/settings.json`:
 
@@ -379,8 +384,8 @@ Merge into `~/.claude/settings.json`:
 
 Notes:
 
-- It reads the command text only. A message passed through a file
-  (`git commit -F`) is not seen.
+- It reads the command text only. It does not see a message passed through a
+  file (`git commit -F`).
 
 ---
 

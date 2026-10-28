@@ -9,7 +9,7 @@ and the rules that always apply.
 
 - Read the topic files (table below) that the task needs.
 - A rule found anywhere else (an old file, a habit, another session) is not a
-  rule until it is written in this repo.
+  rule until this repo holds it.
 - Do not read `plans.md`, `sources.md` or `README.md`: they hold no rules.
 - Change this repo only when jarl has told you, in this session, to work on it.
   Otherwise, when a rule seems wrong or missing, ask in the For jarl section
@@ -21,8 +21,8 @@ and the rules that always apply.
   paragraphs. Stop when the answer is complete. Files follow the same rule.
 - Never commit, push, or run `gh` without jarl's yes; details in
   [workflow.md](workflow.md).
-- In Claude Code, guards, user settings and skills are installed per machine by
-  `uv run tools/machine.py` from this repo's clone, never by hand;
+- In Claude Code, `uv run tools/machine.py` from this repo's clone installs the
+  guards, user settings and skills on a machine; never install them by hand.
   [setup.md](setup.md) names the two things that go in a project's settings.
 
 ## The For jarl section
@@ -40,9 +40,9 @@ Every item is a request: an approval to give, a command to run, a question to
 answer. Information goes in the body of the response, never here. With no
 requests, the whole section is exactly one line: `**For jarl:** none`.
 
-When a response follows another response with no reply from jarl in between (for
-example after a hook bounce), repeat every still-unanswered item verbatim, same
-labels, same order, then append new items, continuing the numbering.
+A response can follow another with no reply from jarl in between, for example
+after a hook bounce. Then repeat every unanswered item verbatim, same labels,
+same order, and append new items with the numbering continued.
 
 The f labels appear only in this section.
 

@@ -43,7 +43,7 @@ OURS = "command -v jq >/dev/null || { echo 'hook: jq missing"
 NEEDED = {
     "jq": "every guard needs it; a static binary in ~/.local/bin works without sudo",
     "uv": "runs the tools and the lint guard",
-    "vale": "language.md section 4 says how to install it",
+    "vale": "language.md section 5 says how to install it",
 }
 Hook = dict[str, Any]
 

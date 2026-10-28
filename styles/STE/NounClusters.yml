@@ -1,0 +1,10 @@
+# language.md section 2, STE rule 2.1. Adapted from Syntaf/vale-llm-slop (MIT, see LICENSE).
+extends: sequence
+message: "Four or more nouns in a row. Break the chain with a preposition."
+link: https://github.com/jarlsondre/based-llm-preferences/blob/main/language.md
+level: error
+tokens:
+  - tag: NN|NNS|NNP
+  - tag: NN|NNS|NNP
+  - tag: NN|NNS|NNP
+  - tag: NN|NNS|NNP

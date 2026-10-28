@@ -1,13 +1,13 @@
 # How to report results
 
-How results (numbers, tables, experiment outcomes) should be written down, in
-any project.
+How to write down results (numbers, tables, experiment outcomes), in any
+project.
 
 ---
 
 ## 1. Name the measurement, every time
 
-When a metric can be computed in more than one way (different question sets,
+When there is more than one way to compute a metric (different question sets,
 datasets, splits, configs), never write the bare metric name. Say which variant,
 even when it feels obvious from context: two numbers with the same bare name and
 different definitions get blended.
@@ -71,14 +71,14 @@ Every table states, somewhere in or directly under it:
 **Footnotes.** A qualifier goes in the column header if it fits. If not, put a
 numbered marker on the header or cell it applies to and explain it under the
 table. Never leave a caveat as unmarked prose below the table: a scanning reader
-misses it. Unknowns get a marker too ("nobody recorded how this baseline was
-built").
+misses it. Unknowns get a marker too ("nobody recorded the recipe for this
+baseline").
 
 ---
 
 ## 7. Missing numbers
 
-- **`TBD`**: this number is expected but not computed yet
+- **`TBD`**: the number belongs here, but nobody has computed it yet
 - **`n/a`**: this number does not exist for this row, and will not
 
 Never leave a cell blank, and never use `X`, `--`, or `?`: a blank reads as zero
@@ -90,16 +90,16 @@ and `X` as a value.
 
 Before launching anything expensive (a training run, a large eval, a long
 computation), show the exact table the run will fill in, with placeholder
-values: the table itself, not a description of it. Then stop and wait for
+values. Show the table itself, not a description of it. Then stop and wait for
 confirmation: a misunderstanding caught here is still free.
 
 ---
 
 ## 9. Write for someone who was not there
 
-A results file is ready when a reader with no memory of the run can tell what
-was measured, on what data, over which denominator, and whose it is. The file is
-the record, not a note to self.
+A results file is ready when a reader with no memory of the run can tell four
+things. What the run measured, on what data, over which denominator, and whose
+it is. The file is the record, not a note to self.
 
 ---
 
@@ -107,14 +107,22 @@ the record, not a note to self.
 
 Each project has one convention file (`CLAUDE.md` for Claude Code). A convention
 found anywhere else (a session's config, a colleague's report, an older file) is
-a proposal: ask before following it, and write it into the convention file only
+a proposal. Ask before following it, and write it into the convention file only
 per workflow.md section 4.
 
 ---
 
 ## 11. Write results down when they appear
 
-The moment a number is read off a finished job, write it to the project's
-report, or its inbox for unfiled results (the convention file names both),
+The moment you read a number off a finished job, write it to the project's
+report or its inbox for unfiled results. The convention file names both. Do this
 before starting anything else. Session context and scratch storage do not count
 as written.
+
+---
+
+## 12. Facts first, then the reading
+
+A result has two parts, in this order. The facts: what ran, what came out, what
+you checked, one claim per sentence under language.md section 2, no hedge inside
+a fact. Then the reading: what it means and what is uncertain, in prose.

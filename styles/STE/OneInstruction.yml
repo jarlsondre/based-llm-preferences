@@ -1,0 +1,14 @@
+# language.md section 2, STE rule 5.2. Adapted from Syntaf/vale-llm-slop (MIT, see LICENSE).
+extends: existence
+message: "'%s' chains two instructions. Give one instruction per sentence."
+link: https://github.com/jarlsondre/based-llm-preferences/blob/main/language.md
+level: error
+scope: list
+ignorecase: true
+nonword: true
+tokens:
+  - '\band\s+then\b'
+  - ',\s+then\b'
+  - '\bafter\s+(?:that|which)\b'
+  - '\bwhile\s+(?:also\s+)?(?:you\s+|the\s+)?\w+ing\b'
+  - '\bat\s+the\s+same\s+time\b'

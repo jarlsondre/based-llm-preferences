@@ -24,18 +24,69 @@ Not plain:
 > subjected to blue light conditions exhibited an average vertical elongation of
 > 12 cm.
 
-Banned mechanisms:
+---
 
-| mechanism       | don't write                    | write               |
-| --------------- | ------------------------------ | ------------------- |
-| fancy synonym   | utilize, ascertain, facilitate | use, find out, help |
-| nominalization  | exhibited vertical elongation  | grew                |
-| passive evasion | it was observed that           | we saw              |
-| throat-clearing | it should be noted that        | (nothing)           |
+## 2. Sentence rules, from ASD-STE100
+
+ASD-STE100 (Simplified Technical English, Issue 9) is the standard for text that
+a reader must obey and cannot misread: 53 writing rules and a dictionary. The
+rules below come from it and carry its numbers. Only the rules listed here
+apply: not the dictionary, and not the rules left out.
+
+They apply to rule files and skills in this repo, tool descriptions, help text
+and error messages, and procedures. They also apply to the facts part of a
+result (reporting.md) and to every For jarl item. Quoted examples are exempt.
+
+Words:
+
+- One name per thing, from first mention to last (1.11).
+- At most three nouns in a row (2.1). Break a longer chain with a preposition:
+  "the time limit of the queue", not "queue time limit setting".
+- Keep the articles: "run the script", not "run script" (2.3).
+- A number, a unit, a path, a flag or a quoted string counts as one word (8.6).
+
+Verbs:
+
+- Active voice; an instruction is an imperative: "Run the check", not "The check
+  should be run" (3.6).
+- A verb for an action, not a noun: "select", not "make a selection" (3.7).
+- Simple tenses, no stacked helping verbs: "the hook denies the call", not "the
+  call is going to be denied" (3.2, 3.4).
+- One verb, not a phrasal verb: "remove", not "take out" (9.3).
+
+Sentences:
+
+- One topic per sentence (4.1). An instruction has at most 20 words (5.1), any
+  other sentence at most 25 (6.3).
+
+<!-- vale STE.OneInstruction = NO -->
+
+- One instruction per sentence, unless two actions happen at the same time
+  (5.2).
+
+<!-- vale STE.OneInstruction = YES -->
+
+- A condition comes before its command, with a comma: "If the file is missing,
+  create it" (5.4).
+- No contractions in files (4.2).
+- Complex text is a vertical list, and "not" is repeated in every item it
+  applies to (4.3).
+
+Paragraphs:
+
+- One topic per paragraph, the topic sentence first, at most six sentences (6.4,
+  6.5, 6.6).
+
+Pointers:
+
+- "it", "this" or "they" only when exactly one noun can be meant; otherwise
+  repeat the noun (GR-3, GR-4).
+- Keep "that" after "check", "make sure" and "show": "check that the job ran"
+  (GR-1).
 
 ---
 
-## 2. Banned patterns
+## 3. Banned patterns
 
 **Em-dashes.** Never: the character reads as AI text. Use a comma, a colon,
 parentheses, or two sentences. Also banned as substitutes: an en-dash, `--`, or
@@ -52,7 +103,7 @@ information, drop it.
 
 **Filler.** No sycophantic openers ("Great question!"). No summary paragraphs
 that restate what was just said. No transitions that carry no content
-("Furthermore,").
+("Furthermore,"). No throat-clearing ("it should be noted that").
 
 **Teasers.** No withheld payoff: "and one of them is unexpected", "the third
 will surprise you". Say the information on the spot or cut the sentence. A
@@ -75,7 +126,7 @@ or state the uncertainty precisely: "untested", "holds for n < 100".
 
 ---
 
-## 3. Banned words
+## 4. Banned words
 
 Name the concrete thing, never a metaphor or a term borrowed from another field.
 These words are banned outright, except where one is the literal subject (an
@@ -106,12 +157,17 @@ actual organism, a real trial arm). In a file, wrap that passage in
 
 ---
 
-## 4. Enforcement
+## 5. Enforcement
 
 Vale (`.vale.ini`, `styles/`) checks the bans a pattern can match; prettier
 (`.prettierrc`) wraps prose at 80 columns. Both must pass, and passing does not
 prove compliance: apply the remaining rules yourself, in files and in every
 response. When a ban changes here, change the Vale style too.
+
+The STE style in `styles/STE` checks sentence length, contractions, noun
+clusters, one instruction per sentence and passive voice in rule files and
+skills. It enforces 25 words everywhere; the 20 for instructions is on the
+writer.
 
 In any project:
 

@@ -30,9 +30,9 @@ text, put the path in its place.
 
 - Prefer LSP operations for code navigation (definitions, references, symbols);
   grep is for text and pattern searches.
-- If an LSP call fails because no language server is configured, ask jarl in the
-  For jarl section to install the LSP plugin (setup.md section 1 of the
-  preferences repo).
+- If an LSP call fails because the project has no language server, ask jarl in
+  the For jarl section to install the LSP plugin. Setup.md section 1 of the
+  preferences repo says how.
 
 ## 3. Renaming
 

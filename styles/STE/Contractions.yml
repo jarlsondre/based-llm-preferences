@@ -1,0 +1,12 @@
+# language.md section 2, STE rule 4.2. Adapted from Syntaf/vale-llm-slop (MIT, see LICENSE).
+extends: existence
+message: "Write '%s' in full: no contractions in files."
+link: https://github.com/jarlsondre/based-llm-preferences/blob/main/language.md
+level: error
+ignorecase: true
+nonword: true
+tokens:
+  - '\b\w+n[''’]t\b'
+  - '\b\w+[''’](?:re|ve|ll|d)\b'
+  - '\b(?:it|that|there|here|what|who|he|she|let)[''’]s\b'
+  - '\b(?:I|you|we|they)[''’](?:m|re|ve|ll|d)\b'

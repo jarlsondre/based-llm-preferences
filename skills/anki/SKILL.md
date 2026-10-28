@@ -23,9 +23,9 @@ states overrides the material; record it in the project's convention file (e.g.
 - Propose cards by writing them; jarl trims them on the approval page (section
   2): morning review time is the budget. Never push a card jarl has not
   approved.
-- Many small cards rather than a few large ones: a card holding several ideas is
-  scheduled as one unit, so the algorithm cannot tell which part is known, and
-  it is tiring to review.
+- Many small cards rather than a few large ones. Anki schedules a card holding
+  several ideas as one unit, so the algorithm cannot tell which part jarl knows.
+  Such a card is also tiring to review.
 - Priority, in this order:
   1. What a thing is: terms and definitions. In math: definitions and notation.
   2. What is true of it and how it works. In math: theorems and lemmas.
@@ -37,11 +37,12 @@ states overrides the material; record it in the project's convention file (e.g.
 ## 2. Approving new cards
 
 1. Ask which parts of the material jarl has covered, and write cards only for
-   those. Read past exams or tests first if there are any, then the material.
+   those. Read past exams or tests first if there are any, and the material
+   after them.
 2. List the cards already in the target deck with
    `uv run ${CLAUDE_SKILL_DIR}/scripts/anki.py --existing <deck>`, and write no
    card that one of them covers.
-3. Cards that listing marks `NOT IN FILES` were made outside the card files. Ask
+3. Cards that listing marks `NOT IN FILES` come from outside the card files. Ask
    jarl whether to convert them to the shared note type, which costs one one-way
    sync in Anki; never convert unasked. After a yes, add the card to the files
    with `"adopt": <note id>`, the listing's first column.
@@ -63,11 +64,17 @@ states overrides the material; record it in the project's convention file (e.g.
 
 - One idea per card, and one ask: "what is X, and why?" is two. Easy enough that
   jarl nearly always recalls it, never trivially inferable.
+
+<!-- vale STE.NounClusters = NO -->
+
 - Self-contained: understandable in two months with no memory of this chat.
   `setting` defines everything the question uses and nothing else. Example: for
   \(\partial x^T A x / \partial x\), define "x in R^n, A in R^{n by n}
-  symmetric"; defining \(f(x) = x^T A x\) too is unused, cut it. No term or
-  symbol jarl has not met yet.
+  symmetric". A definition of \(f(x) = x^T A x\) too would go unused: cut it. No
+  term or symbol jarl has not met yet.
+
+<!-- vale STE.NounClusters = YES -->
+
 - Every card names its `kind`: the sort of answer it wants, in one or two words
   (`--help` lists examples).
 - Card the general fact, never a specific exercise, which gets answered by rote.
@@ -79,9 +86,9 @@ states overrides the material; record it in the project's convention file (e.g.
 - Code goes in backticks, inline or as a fenced block.
 - Math is MathJax `\(...\)`; the tool rejects a bare `$` outside code.
 - `extra` is an optional footer: never needed to answer. If unsure, omit it.
-- A card jarl keeps failing is split into one-idea cards; keep the original too.
-  A card jarl no longer wants: remove its entry and ask jarl to delete the note
-  in Anki.
+- Split a card jarl keeps failing into one-idea cards; keep the original too. A
+  card jarl no longer wants: remove its entry and ask jarl to delete the note in
+  Anki.
 
 ## 4. Building the deck
 
@@ -93,8 +100,8 @@ states overrides the material; record it in the project's convention file (e.g.
   `uv run ${CLAUDE_SKILL_DIR}/scripts/anki.py anki/`. `--apkg` writes a file to
   import by hand instead; it ignores `pushed.json` and `adopt`, so the import
   brings back cards jarl deleted and duplicates an adopted card. Use it only
-  when Anki cannot be reached.
-- Never work around the tool; per-card formatting is banned.
+  when Anki is unreachable.
+- Never work around the tool; never format a card by hand.
 
 ## Sources
 
