@@ -15,6 +15,11 @@ are added, other keys are set to the block's value. An installed hook that
 starts with the guards' jq check and is no longer in hooks.md is removed.
 Everything else in the file stays as it is.
 
+Instructions: a marked block in ~/.claude/CLAUDE.md imports main.md from this
+clone with its absolute path, so every Claude Code session starts with the
+rules. The block is rewritten when the clone's path changes; the rest of the
+file stays as it is.
+
 Skills: every folder in skills/ that holds a SKILL.md is linked into
 ~/.claude/skills/. A name that is already taken by something else is reported
 and left alone.
@@ -40,6 +45,8 @@ BLOCK = re.compile(
     r"Merge into `~/\.claude/settings\.json`:\n\n```json\n(.*?)```", re.DOTALL
 )
 OURS = "command -v jq >/dev/null || { echo 'hook: jq missing"
+MARK = "<!-- llm-preferences: written by tools/machine.py; edit the repo, not this block -->"
+END = "<!-- /llm-preferences -->"
 NEEDED = {
     "jq": "every guard needs it; a static binary in ~/.local/bin works without sudo",
     "uv": "runs the tools and the lint guard",
@@ -136,6 +143,38 @@ def link(source: Path, target: Path, label: str, write: bool) -> list[str]:
     return [f"{label}: link {target.name}"]
 
 
+def rules_block() -> str:
+    """The CLAUDE.md block that imports main.md from this clone."""
+    repo = REPO.resolve()
+    return (
+        f"{MARK}\n"
+        f"jarl's rules for every agent are in {repo}. main.md follows; its links"
+        " point into that directory.\n"
+        f"@{str(repo / 'main.md').replace(' ', chr(92) + ' ')}\n"
+        f"{END}\n"
+    )
+
+
+def import_rules(claude_dir: Path, write: bool) -> list[str]:
+    """Put the main.md import block into CLAUDE.md; leave the rest of the file alone."""
+    path = claude_dir / "CLAUDE.md"
+    block = rules_block()
+    text = path.read_text() if path.exists() else ""
+    if block in text:
+        return []
+    old = re.compile(re.escape(MARK) + r".*?" + re.escape(END) + r"\n?", re.DOTALL)
+    if old.search(text):
+        new = old.sub(lambda _: block, text)
+        change = "instructions: point the main.md import at this clone"
+    else:
+        new = (text.rstrip("\n") + "\n\n" if text.strip() else "") + block
+        change = "instructions: import main.md from CLAUDE.md"
+    if write:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(new)
+    return [change]
+
+
 def link_skills(target: Path, write: bool) -> list[str]:
     skills = sorted(
         p for p in (REPO / "skills").iterdir() if (p / "SKILL.md").is_file()
@@ -168,6 +207,7 @@ def main() -> None:
     settings_path = args.claude_dir / "settings.json"
     settings = json.loads(settings_path.read_text()) if settings_path.exists() else {}
     changes = merge_settings(settings)
+    changes += import_rules(args.claude_dir, write=not args.check)
     changes += link_skills(args.claude_dir / "skills", write=not args.check)
     changes += link_commands(args.bin_dir, write=not args.check)
     changes += [

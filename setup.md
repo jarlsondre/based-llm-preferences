@@ -9,10 +9,13 @@ uv run tools/machine.py           # bring this machine up to date
 uv run tools/machine.py --check   # only report; exit code 1 when out of date
 ```
 
-It puts the guards and settings from [hooks.md](hooks.md) into
-`~/.claude/settings.json`, links every folder in [skills/](skills/) into
-`~/.claude/skills/`, links `has_secret` into `~/.local/bin`, and names any
-missing command-line tool; install what it names. After pulling this repo, run
+The tool puts the guards and settings from [hooks.md](hooks.md) into
+`~/.claude/settings.json`. It writes a block into `~/.claude/CLAUDE.md` that
+imports main.md from this repo's copy on the machine, so every Claude Code
+session there starts with the rules. It links every folder in
+[skills/](skills/) into `~/.claude/skills/` and `has_secret` into
+`~/.local/bin`. It names any missing command-line tool; install what it names.
+After pulling this repo, run
 it again and tell jarl what it changed. A setting or skill meant for every
 machine goes into hooks.md or skills/, never into one machine by hand.
 
