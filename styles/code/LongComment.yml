@@ -1,0 +1,8 @@
+# code-style.md section 1. The comment scope exists only in code files; see .vale.ini.
+extends: occurrence
+message: "Comment or docstring has %d words (code-style.md). Over 40: can a name, a constant or a small function say it?"
+link: https://github.com/jarlsondre/based-llm-preferences/blob/main/code-style.md
+level: warning
+scope: comment
+max: 40
+token: '[\w''’-]+'

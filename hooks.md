@@ -107,11 +107,13 @@ Notes:
 
 ---
 
-## 3. Language guard: Vale on every markdown edit
+## 3. Language guard: Vale on every markdown and code edit
 
-Enforces language.md. After every edit to a `.md` file, Vale runs on it with the
-nearest `.vale.ini` found upward from the file. Findings come back as a blocking
-error. With no `.vale.ini` above the file, the file passes unchecked.
+Enforces language.md, and the comment caps in code-style.md section 1. After
+every edit to a `.md`, `.py` or `.rs` file, Vale runs on it with the nearest
+`.vale.ini` found upward from the file. Errors come back as a blocking error.
+Warnings come back as context, and the agent judges them. With no `.vale.ini`
+above the file, the file passes unchecked.
 
 Merge into `~/.claude/settings.json`:
 
@@ -124,7 +126,7 @@ Merge into `~/.claude/settings.json`:
         "hooks": [
           {
             "type": "command",
-            "command": "command -v jq >/dev/null || { echo 'hook: jq missing; install a static jq binary into ~/.local/bin (no sudo needed)' >&2; exit 2; }; f=$(jq -r '.tool_input.file_path // empty'); case \"$f\" in *.md) d=$(cd \"$(dirname \"$f\")\" && pwd); cfg=\"\"; while :; do { [ -e \"$d/.vale.ini\" ] || [ -L \"$d/.vale.ini\" ]; } && { cfg=\"$d/.vale.ini\"; break; }; [ \"$d\" = \"/\" ] && break; d=$(dirname \"$d\"); done; [ -n \"$cfg\" ] || exit 0; command -v vale >/dev/null || { echo 'hook: vale missing; install per language.md section 5' >&2; exit 2; }; out=$(vale --config \"$cfg\" --output line \"$f\" 2>&1) || { printf '%s\\n' \"$out\" >&2; exit 2; } ;; esac"
+            "command": "command -v jq >/dev/null || { echo 'hook: jq missing; install a static jq binary into ~/.local/bin (no sudo needed)' >&2; exit 2; }; f=$(jq -r '.tool_input.file_path // empty'); case \"$f\" in *.md|*.py|*.rs) d=$(cd \"$(dirname \"$f\")\" && pwd); cfg=\"\"; while :; do { [ -e \"$d/.vale.ini\" ] || [ -L \"$d/.vale.ini\" ]; } && { cfg=\"$d/.vale.ini\"; break; }; [ \"$d\" = \"/\" ] && break; d=$(dirname \"$d\"); done; [ -n \"$cfg\" ] || exit 0; command -v vale >/dev/null || { echo 'hook: vale missing; install per language.md section 5' >&2; exit 2; }; out=$(vale --config \"$cfg\" --output line \"$f\" 2>&1); ok=$?; if [ \"$ok\" -ne 0 ]; then printf '%s\\n' \"$out\" >&2; exit 2; fi; if [ -n \"$out\" ]; then jq -n --arg c \"$out\" '{hookSpecificOutput:{hookEventName:\"PostToolUse\",additionalContext:$c}}'; fi ;; esac"
           }
         ]
       }
@@ -139,6 +141,8 @@ Notes:
 - Missing `vale` fails after the edit with an install message. A dangling
   `.vale.ini` symlink fails with Vale's own error: re-run the `ln` line in
   setup.md section 2.
+- Vale cannot see a module docstring that follows a comment, so a uv script's
+  usage text goes unchecked. It sees function docstrings and comments.
 
 ---
 

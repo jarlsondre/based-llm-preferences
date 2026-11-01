@@ -14,9 +14,16 @@
 - Prefer pure functions where the cost is small: they are easier to test.
 - Keep functions small. Do not extract a one-liner unless the separation makes
   semantic sense on its own, or the same line appears more than three times.
-- A comment states what the code cannot: a constraint, a why, a warning. Never
-  narrate what the next line does. One line is the norm; a longer explanation
-  goes in a doc.
+- Write code that documents itself: a reader understands it from its names, with
+  no comment. Name every variable, function and constant for what it holds or
+  does, in full words. Good names are hard to find; spend the time on them.
+- Before you write a comment, try a better name or a smaller function. A comment
+  states what the code cannot: a constraint, a why, a warning. Never narrate
+  what the next line does. One line is the norm. A docstring is a comment: one
+  line on what the function does. History, dates and decisions go in a doc or
+  the commit message, never in source. Vale warns over 40 words per comment or
+  docstring and blocks over 80. A library that renders its reference docs from
+  docstrings may turn that off for its public API.
 - Edit files with the harness's editing tools, never with string-replacement
   commands or scripts (`sed -i`, `.replace()` one-liners). Those skip the hooks,
   and a failed match is a silent no-op where the editing tool fails loudly. Two

@@ -1,0 +1,8 @@
+# code-style.md section 1. The comment scope exists only in code files; see .vale.ini.
+extends: occurrence
+message: "Comment or docstring has %d words (code-style.md). Over 80 it is documentation: move it to a doc, or history to the commit message."
+link: https://github.com/jarlsondre/based-llm-preferences/blob/main/code-style.md
+level: error
+scope: comment
+max: 80
+token: '[\w''’-]+'
