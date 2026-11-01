@@ -171,9 +171,10 @@ writer.
 
 In any project:
 
-1. `vale` missing: on macOS, `brew install vale`. Elsewhere, download the
-   release tarball for the machine's architecture from Vale's GitHub releases
-   and put the `vale` binary on PATH (`~/.local/bin`). Never sudo.
+1. `vale` missing or older than 3.24.0: on macOS, `brew install vale` or
+   `brew upgrade vale`. Elsewhere, download the release tarball for the
+   machine's architecture from Vale's GitHub releases and put the `vale` binary
+   on PATH (`~/.local/bin`). Never sudo.
 2. Before the first vale call, check the project's `.vale.ini`: if it is missing
    or a dangling symlink, run the `ln` line in [setup.md](setup.md) section 2.
 3. After writing markdown or LaTeX: run `vale <file>`; for markdown also

@@ -14,9 +14,10 @@ The tool puts the guards and settings from [hooks.md](hooks.md) into
 imports main.md from this repo's copy on the machine. Every Claude Code session
 there then starts with the rules. It links every folder in [skills/](skills/)
 into `~/.claude/skills/` and `has_secret` into `~/.local/bin`. It names any
-missing command-line tool; install what it names. After pulling this repo, run
-it again and tell jarl what it changed. A setting or skill meant for every
-machine goes into hooks.md or skills/, never into one machine by hand.
+missing or outdated command-line tool; install or upgrade what it names. After
+pulling this repo, run it again and tell jarl what it changed. A setting or
+skill meant for every machine goes into hooks.md or skills/, never into one
+machine by hand.
 
 Install LSP plugins by hand. Get the binaries first: `brew install pyright` on
 macOS or `npm install -g pyright` elsewhere, and

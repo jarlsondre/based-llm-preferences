@@ -27,7 +27,8 @@ and left alone.
 Commands: tools/has_secret.py is linked to ~/.local/bin/has_secret, and the
 tool reports when that folder is not on PATH.
 
-Tools: it reports jq, uv and vale when they are not on PATH.
+Tools: it reports jq, uv and vale when they are not on PATH, and vale when it is
+older than the version the code comment checks were tested with.
 """
 
 import argparse
@@ -35,6 +36,7 @@ import json
 import os
 import re
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -52,6 +54,7 @@ NEEDED = {
     "uv": "runs the tools and the lint guard",
     "vale": "language.md section 5 says how to install it",
 }
+VALE_MIN = (3, 24, 0)  # comment scopes in code files were tested on this version
 Hook = dict[str, Any]
 
 
@@ -175,6 +178,25 @@ def import_rules(claude_dir: Path, write: bool) -> list[str]:
     return [change]
 
 
+def outdated_vale() -> list[str]:
+    """One line when vale is installed but older than VALE_MIN."""
+    if not shutil.which("vale"):
+        return []
+    out = subprocess.run(
+        ["vale", "--version"], capture_output=True, text=True, check=False
+    ).stdout
+    found = re.search(r"(\d+)\.(\d+)\.(\d+)", out)
+    if found is None or tuple(map(int, found.groups())) >= VALE_MIN:
+        return []
+    minimum = ".".join(map(str, VALE_MIN))
+    return [
+        (
+            f"tools: vale {found.group(0)} is older than {minimum}, which the comment"
+            " checks in .vale.ini need; upgrade per language.md section 5"
+        )
+    ]
+
+
 def link_skills(target: Path, write: bool) -> list[str]:
     skills = sorted(
         p for p in (REPO / "skills").iterdir() if (p / "SKILL.md").is_file()
@@ -215,6 +237,7 @@ def main() -> None:
         for name, why in NEEDED.items()
         if not shutil.which(name)
     ]
+    changes += outdated_vale()
     if not changes:
         print("this machine is up to date")
         return
