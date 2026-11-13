@@ -40,9 +40,15 @@ literally, so cloze markup and math inside code are not interpreted.
 
 A figure is ![alt text](media/NAME.svg) in any text field, with the path
 relative to the card files' folder; .svg, .png and .jpg work. A PNG or JPEG
-shows at half its pixel width, sharp on phone screens. A
-push stores it in Anki under its name plus a hash of its content, so a changed
-figure never overwrites another.
+shows at half its pixel width, sharp on phone screens. Every figure needs a
+source in media/sources.json that names the work, never a file: "media/x.svg":
+"Boyd and Vandenberghe, Convex Optimization, page 72, Figure 3.1". A web page
+gets its title and URL. The card shows the source under the figure; --crop
+writes it. A figure the agent made itself says so and names its basis, such as
+"made by the agent: plot of f(x) = x^2 with matplotlib". A push stores each
+figure in Anki under
+its name plus a hash of its content, so a changed figure never overwrites
+another.
 
 --figures prints one line per figure or table in a PDF: page, vector or
 raster, the box in points from the page's top left, and the nearest caption
@@ -50,7 +56,10 @@ below it. Parts with the same caption, such as the panels of one figure, merge
 into one box. --crop saves that box of the page (pages count from 1) to
 anki/media/NAME.svg, with the vector shapes and letters as outlines; anything
 outside the box is removed first. It saves a PNG instead when the box holds a
-raster image or --png is given. It sizes the figure so its labels show as large
+raster image or --png is given. --source names the work the PDF holds, such as
+"Vaswani et al., Attention Is All You Need (2017)"; --crop adds the page and the
+caption's number. The page is the number printed on it when the PDF records
+one, otherwise the count from 1. It sizes the figure so its labels show as large
 as the card's small text, 16 pixels; --label-px N changes that. Labels are the
 median letter size in the box, or on the page when the box holds no text. It
 prints the figure syntax and the path of a preview image at the size the card
@@ -145,6 +154,7 @@ img {
   display: block; max-width: 100%; height: auto; margin: 10px 0;
   background: #fff; border-radius: 6px; cursor: zoom-in;
 }
+.source { font-size: 12px; opacity: .6; margin: -4px 0 12px; }
 .zoom {
   position: fixed; inset: 0; z-index: 1000; cursor: zoom-out;
   display: flex; align-items: center; justify-content: center;
@@ -201,6 +211,7 @@ MARKUP = re.compile(
 )
 FIGURE_TYPES = {".svg", ".png", ".jpg", ".jpeg"}
 IMG_SRC = re.compile(r'<img src="([^"]+)"')
+SOURCES = "sources.json"
 CAPTION = re.compile(r"^(Figure|Fig\.|Table)\s*\d+[.:]", re.IGNORECASE)
 LABEL_WORDS = 8  # a text line this short next to a figure is one of its labels
 LABEL_PX = 16  # as large as the card's Setting and Extra text
@@ -257,10 +268,20 @@ def shown_width(path: Path) -> int:
     return pymupdf.Pixmap(str(path)).width // PIXEL_DENSITY
 
 
+def read_sources(cards_dir: Path) -> dict[str, str]:
+    path = cards_dir / "media" / SOURCES
+    return json.loads(path.read_text()) if path.exists() else {}
+
+
 def render(
-    text: str, cards_dir: Path, figures: dict[str, Path], errors: list[str], where: str
+    text: str,
+    cards_dir: Path,
+    figures: dict[str, Path],
+    errors: list[str],
+    where: str,
+    sources: dict[str, str],
 ) -> str:
-    """Turn code into literal HTML and figure syntax into img tags."""
+    """Turn code into literal HTML and figure syntax into img tags with sources."""
 
     def replace(m: re.Match[str]) -> str:
         if m["fenced"] is not None:
@@ -276,12 +297,22 @@ def render(
                 f"{where}: {m['src']}: figures are {', '.join(sorted(FIGURE_TYPES))}"
             )
             return m[0]
+        key = path.relative_to(cards_dir.resolve()).as_posix()
+        if key not in sources:
+            errors.append(
+                f'{where}: {key} has no source; add "{key}": "<work>, page <n>,'
+                f' Figure <n>" to media/{SOURCES}'
+            )
+            return m[0]
         name = figure_name(path)
         figures[name] = path
         alt = html.escape(m["alt"])
-        if path.suffix.lower() == ".svg":
-            return f'<img src="{name}" alt="{alt}">'
-        return f'<img src="{name}" alt="{alt}" width="{shown_width(path)}">'
+        width = "" if path.suffix.lower() == ".svg" else f' width="{shown_width(path)}"'
+        source = html.escape(sources[key])
+        return (
+            f'<div class="figure"><img src="{name}" alt="{alt}"{width}>'
+            f'<div class="source">Source: {source}</div></div>'
+        )
 
     return MARKUP.sub(replace, text)
 
@@ -291,6 +322,7 @@ def load(cards_dir: Path) -> tuple[list[dict[str, Any]], list[str]]:
     if not files:
         sys.exit(f"anki.py: no card files (*.json) in {cards_dir}")
     cards, errors = [], []
+    sources = read_sources(cards_dir)
     for path in files:
         try:
             data = json.loads(path.read_text())
@@ -304,10 +336,12 @@ def load(cards_dir: Path) -> tuple[list[dict[str, Any]], list[str]]:
             where = label(card)
             for key in CONTENT:
                 if isinstance(card.get(key), str):
-                    card[key] = render(card[key], cards_dir, figures, errors, where)
+                    card[key] = render(
+                        card[key], cards_dir, figures, errors, where, sources
+                    )
             if isinstance(card.get("steps"), list):
                 card["steps"] = [
-                    render(str(step), cards_dir, figures, errors, where)
+                    render(str(step), cards_dir, figures, errors, where, sources)
                     for step in card["steps"]
                 ]
             card["figures"] = figures
@@ -651,6 +685,30 @@ def embed_figures(text: str, figures: dict[str, Path]) -> str:
     return IMG_SRC.sub(data_uri, text)
 
 
+def text_lines(page: Any) -> list[tuple[Any, str]]:
+    import pymupdf  # type: ignore  # uv script dep
+
+    return [
+        (pymupdf.Rect(line["bbox"]), "".join(s["text"] for s in line["spans"]))
+        for block in page.get_text("dict")["blocks"]
+        for line in block.get("lines", [])
+    ]
+
+
+def caption_label(page: Any, box: Any) -> str:
+    """The figure or table number of the caption right below the box, if any."""
+    below = [
+        (rect, found[0].rstrip(".:"))
+        for rect, text in text_lines(page)
+        if (found := CAPTION.match(text))
+        and rect.y0 >= box.y1 - 5
+        and rect.x1 > box.x0
+        and rect.x0 < box.x1
+    ]
+    nearest = min(below, key=lambda c: c[0].y0, default=None)
+    return nearest[1] if nearest else ""
+
+
 def figure_boxes(pdf: Path, only_page: int | None) -> None:
     """Print each figure: page, vector or raster, box, caption.
 
@@ -661,11 +719,7 @@ def figure_boxes(pdf: Path, only_page: int | None) -> None:
     doc = pymupdf.open(pdf)
     pages = [doc[only_page - 1]] if only_page else list(doc)
     for page in pages:
-        lines = [
-            (pymupdf.Rect(line["bbox"]), "".join(s["text"] for s in line["spans"]))
-            for block in page.get_text("dict")["blocks"]
-            for line in block.get("lines", [])
-        ]
+        lines = text_lines(page)
         captions = [(rect, text) for rect, text in lines if CAPTION.match(text)]
         labels = [
             rect
@@ -719,7 +773,13 @@ def text_size(page: Any, box: Any) -> float:
 
 
 def crop_figure(
-    pdf: Path, page_number: int, corners: str, out: Path, force_png: bool, label_px: int
+    pdf: Path,
+    page_number: int,
+    corners: str,
+    out: Path,
+    work: str,
+    force_png: bool,
+    label_px: int,
 ) -> None:
     """Save one box of a PDF page as a figure, with everything outside it removed."""
     import pymupdf  # type: ignore  # uv script dep
@@ -727,6 +787,9 @@ def crop_figure(
     page = pymupdf.open(pdf)[page_number - 1]
     box = pymupdf.Rect([float(v) for v in corners.split(",")])
     scale = label_px / text_size(page, box)
+    label = caption_label(page, box)
+    printed_page = page.get_label() or str(page_number)
+    source = f"{work}, page {printed_page}" + (f", {label}" if label else "")
     whole = page.rect
     outside = [
         pymupdf.Rect(whole.x0, whole.y0, whole.x1, box.y0),
@@ -765,7 +828,13 @@ def crop_figure(
     print(
         f"wrote {target} ({target.stat().st_size // 1000} KB, {kind}, shown {shown}px)"
     )
-    print(f"in a card: ![describe it]({target.parent.name}/{target.name})")
+    key = f"{target.parent.name}/{target.name}"
+    sources_path = out.parent / SOURCES
+    sources = json.loads(sources_path.read_text()) if sources_path.exists() else {}
+    sources[key] = source
+    sources_path.write_text(json.dumps(sources, indent=2, sort_keys=True) + "\n")
+    print(f"source in {sources_path}: {source}")
+    print(f"in a card: ![describe it]({key})")
     print(f"look at the preview, at the size the card shows it: {preview}")
 
 
@@ -827,6 +896,7 @@ def main() -> None:
     ap.add_argument("--crop", nargs=4, metavar=("PDF", "PAGE", "X0,Y0,X1,Y1", "NAME"))
     ap.add_argument("--png", action="store_true")
     ap.add_argument("--label-px", type=int, default=LABEL_PX)
+    ap.add_argument("--source", metavar="WORK")
     args = ap.parse_args()
     if args.existing:
         list_existing(args.existing)
@@ -837,9 +907,16 @@ def main() -> None:
     if args.cards_dir is None or not args.cards_dir.is_dir():
         sys.exit(f"anki.py: pass the anki/ folder; got {args.cards_dir}")
     if args.crop:
+        if not args.source:
+            sys.exit(
+                "anki.py: --crop needs --source, the work the PDF holds, such as"
+                ' "Vaswani et al., Attention Is All You Need (2017)"'
+            )
         pdf, page, corners, name = args.crop
         out = args.cards_dir / "media" / name
-        crop_figure(Path(pdf), int(page), corners, out, args.png, args.label_px)
+        crop_figure(
+            Path(pdf), int(page), corners, out, args.source, args.png, args.label_px
+        )
         return
     written, errors = load(args.cards_dir)
     cards, step_errors = expand_steps(written)

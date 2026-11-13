@@ -105,6 +105,9 @@ states overrides the material; record it in the project's convention file (e.g.
   names. Leave out the caption; the card text explains the figure instead.
 - Make figures with `--figures` and `--crop`; `--help` has the steps. Look at
   the preview before you use it.
+- Every figure shows its exact source under it: the work, such as a paper, a
+  textbook or a website, and the page. `--crop` records it from `--source`. A
+  figure you make yourself says so, and names what you made it from.
 - Split a card jarl keeps failing into one-idea cards; keep the original too. A
   card jarl no longer wants: remove its entry and ask jarl to delete the note in
   Anki.
