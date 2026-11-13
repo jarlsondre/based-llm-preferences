@@ -1,6 +1,9 @@
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["genanki"]
+# dependencies = ["genanki==0.13.1", "pymupdf==2.1"]
+#
+# [tool.uv]
+# exclude-newer = "2026-11-13T00:00:00Z"
 # ///
 """Validate cards and build Anki decks; conventions in this skill's SKILL.md.
 
@@ -9,6 +12,8 @@ Usage: uv run anki.py anki/             # push via AnkiConnect (Anki open)
        uv run anki.py anki/ --approval  # write anki/approval.html
        uv run anki.py anki/ --apkg      # write anki/cards.apkg instead
        uv run anki.py --existing DECK   # list the cards already in a deck
+       uv run anki.py --figures PDF     # list figure boxes; --page N for one page
+       uv run anki.py anki/ --crop PDF PAGE X0,Y0,X1,Y1 NAME  # save a figure
        uv run anki.py --help            # print this text
 
 The directory holds one JSON file per subdeck: {"deck": full deck name,
@@ -32,6 +37,24 @@ In math: "definition", "theorem", "proposition", "example", "notation",
 Math is MathJax \\(...\\) or \\[...\\]; a bare $ outside code is rejected. Code
 goes in backticks, inline or as a fenced block. It is escaped and shown
 literally, so cloze markup and math inside code are not interpreted.
+
+A figure is ![alt text](media/NAME.svg) in any text field, with the path
+relative to the card files' folder; .svg, .png and .jpg work. A PNG or JPEG
+shows at half its pixel width, sharp on phone screens. A
+push stores it in Anki under its name plus a hash of its content, so a changed
+figure never overwrites another.
+
+--figures prints one line per figure or table in a PDF: page, vector or
+raster, the box in points from the page's top left, and the nearest caption
+below it. Parts with the same caption, such as the panels of one figure, merge
+into one box. --crop saves that box of the page (pages count from 1) to
+anki/media/NAME.svg, with the vector shapes and letters as outlines; anything
+outside the box is removed first. It saves a PNG instead when the box holds a
+raster image or --png is given. It sizes the figure so its labels show as large
+as the card's small text, 16 pixels; --label-px N changes that. Labels are the
+median letter size in the box, or on the page when the box holds no text. It
+prints the figure syntax and the path of a preview image at the size the card
+shows: look at the preview before using the figure.
 
 A card whose entry moves to another file moves to that file's deck on the next
 push.
@@ -58,11 +81,15 @@ and duplicates an adopted card. Use it only when Anki cannot be reached.
 """
 
 import argparse
+import base64
 import hashlib
 import html
 import json
+import mimetypes
 import re
+import statistics
 import sys
+import tempfile
 import urllib.request
 from pathlib import Path
 from typing import Any
@@ -114,8 +141,37 @@ pre code { padding: 0; background: none; font-size: .85em; }
   opacity: .8;
 }
 mjx-container[display="true"] { margin: 10px 0 !important; }
+img {
+  display: block; max-width: 100%; height: auto; margin: 10px 0;
+  background: #fff; border-radius: 6px; cursor: zoom-in;
+}
+.zoom {
+  position: fixed; inset: 0; z-index: 1000; cursor: zoom-out;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,.6);
+}
+.zoom img {
+  width: min(90vw, 900px); max-width: none; max-height: 85vh; margin: 0;
+  object-fit: contain; padding: 12px; box-sizing: border-box;
+  border-radius: 10px; box-shadow: 0 8px 32px rgba(0,0,0,.4);
+}
 """
-SETTING = '{{#Setting}}<div class="setting">{{Setting}}</div>{{/Setting}}'
+# The guard keeps one listener: Anki reuses the page and reruns the script per card.
+ZOOM = """<script>
+if (!window.figureZoom) {
+  window.figureZoom = true;
+  document.addEventListener("click", function (event) {
+    var open = document.querySelector(".zoom");
+    if (open) { open.remove(); return; }
+    if (event.target.tagName !== "IMG") return;
+    var overlay = document.createElement("div");
+    overlay.className = "zoom";
+    overlay.appendChild(event.target.cloneNode());
+    event.target.parentNode.appendChild(overlay);
+  });
+}
+</script>"""
+SETTING = '{{#Setting}}<div class="setting">{{Setting}}</div>{{/Setting}}' + ZOOM
 FOOTER = (
     '{{#Extra}}<div class="extra">{{Extra}}</div>{{/Extra}}<div class="id">{{Id}}</div>'
 )
@@ -138,8 +194,17 @@ YES_NO = re.compile(
     re.IGNORECASE,
 )
 BARE_DOLLAR = re.compile(r"(?<!\\)\$")
-FENCED = re.compile(r"```[\w-]*\n?(.*?)```", re.DOTALL)
-INLINE = re.compile(r"`([^`\n]+)`")
+MARKUP = re.compile(
+    r"```[\w-]*\n?(?P<fenced>.*?)```|`(?P<inline>[^`\n]+)`"
+    r"|!\[(?P<alt>[^\]]*)\]\((?P<src>[^)\s]+)\)",
+    re.DOTALL,
+)
+FIGURE_TYPES = {".svg", ".png", ".jpg", ".jpeg"}
+IMG_SRC = re.compile(r'<img src="([^"]+)"')
+CAPTION = re.compile(r"^(Figure|Fig\.|Table)\s*\d+[.:]", re.IGNORECASE)
+LABEL_WORDS = 8  # a text line this short next to a figure is one of its labels
+LABEL_PX = 16  # as large as the card's Setting and Extra text
+PIXEL_DENSITY = 2  # a PNG figure has two pixels per screen pixel, sharp on phones
 TAGS = re.compile(r"<[^>]+>")
 CLOZE = re.compile(r"\{\{c\d+::(.*?)(?:::[^}]*)?\}\}", re.DOTALL)
 APPROVAL_PAGE = Path(__file__).parent.parent / "assets" / "approval.html"
@@ -179,18 +244,53 @@ def escape_code(code: str) -> str:
     return text
 
 
-def render_code(text: str) -> str:
-    text = FENCED.sub(
-        lambda m: f"<pre><code>{escape_code(m[1].strip(chr(10)))}</code></pre>", text
-    )
-    return INLINE.sub(lambda m: f"<code>{escape_code(m[1])}</code>", text)
+def figure_name(path: Path) -> str:
+    """The figure's name in Anki's media folder: its stem plus a content hash."""
+    stem = re.sub(r"[^\w.-]", "-", path.stem)
+    return f"{stem}-{hashlib.sha256(path.read_bytes()).hexdigest()[:8]}{path.suffix.lower()}"
 
 
-def load(cards_dir: Path) -> list[dict[str, Any]]:
+def shown_width(path: Path) -> int:
+    """The width in screen pixels of a PNG or JPEG figure on the card."""
+    import pymupdf  # type: ignore  # uv script dep
+
+    return pymupdf.Pixmap(str(path)).width // PIXEL_DENSITY
+
+
+def render(
+    text: str, cards_dir: Path, figures: dict[str, Path], errors: list[str], where: str
+) -> str:
+    """Turn code into literal HTML and figure syntax into img tags."""
+
+    def replace(m: re.Match[str]) -> str:
+        if m["fenced"] is not None:
+            return f"<pre><code>{escape_code(m['fenced'].strip(chr(10)))}</code></pre>"
+        if m["inline"] is not None:
+            return f"<code>{escape_code(m['inline'])}</code>"
+        path = (cards_dir / m["src"]).resolve()
+        if not path.is_relative_to(cards_dir.resolve()) or not path.is_file():
+            errors.append(f"{where}: no figure {m['src']} inside {cards_dir}")
+            return m[0]
+        if path.suffix.lower() not in FIGURE_TYPES:
+            errors.append(
+                f"{where}: {m['src']}: figures are {', '.join(sorted(FIGURE_TYPES))}"
+            )
+            return m[0]
+        name = figure_name(path)
+        figures[name] = path
+        alt = html.escape(m["alt"])
+        if path.suffix.lower() == ".svg":
+            return f'<img src="{name}" alt="{alt}">'
+        return f'<img src="{name}" alt="{alt}" width="{shown_width(path)}">'
+
+    return MARKUP.sub(replace, text)
+
+
+def load(cards_dir: Path) -> tuple[list[dict[str, Any]], list[str]]:
     files = sorted(p for p in cards_dir.glob("*.json") if p.name != PUSHED)
     if not files:
         sys.exit(f"anki.py: no card files (*.json) in {cards_dir}")
-    cards = []
+    cards, errors = [], []
     for path in files:
         try:
             data = json.loads(path.read_text())
@@ -200,13 +300,19 @@ def load(cards_dir: Path) -> list[dict[str, Any]]:
             sys.exit(f'anki.py: {path.name}: needs a "deck" and a "cards" key')
         for raw in data["cards"]:
             card = dict(raw) | {"deck": data["deck"], "file": path.name}
+            figures: dict[str, Path] = {}
+            where = label(card)
             for key in CONTENT:
                 if isinstance(card.get(key), str):
-                    card[key] = render_code(card[key])
+                    card[key] = render(card[key], cards_dir, figures, errors, where)
             if isinstance(card.get("steps"), list):
-                card["steps"] = [render_code(str(step)) for step in card["steps"]]
+                card["steps"] = [
+                    render(str(step), cards_dir, figures, errors, where)
+                    for step in card["steps"]
+                ]
+            card["figures"] = figures
             cards.append(card)
-    return cards
+    return cards, errors
 
 
 def label(card: dict[str, Any]) -> str:
@@ -249,6 +355,7 @@ def expand_steps(
                     "kind": card.get("kind", ""),
                     "deck": card["deck"],
                     "file": card["file"],
+                    "figures": card["figures"],
                 }
             )
     return out, errors
@@ -378,11 +485,29 @@ def read_pushed(pushed_path: Path) -> set[str]:
     return set(json.loads(pushed_path.read_text())) if pushed_path.exists() else set()
 
 
+def all_figures(cards: list[dict[str, Any]]) -> dict[str, Path]:
+    return {name: path for card in cards for name, path in card["figures"].items()}
+
+
+def store_figures(cards: list[dict[str, Any]]) -> int:
+    """Copy the figures Anki does not have yet into its media folder."""
+    figures = all_figures(cards)
+    if not figures:
+        return 0
+    have = set(invoke("getMediaFilesNames", pattern="*"))
+    missing = sorted(figures.keys() - have)
+    for name in missing:
+        data = base64.b64encode(figures[name].read_bytes()).decode()
+        invoke("storeMediaFile", filename=name, data=data)
+    return len(missing)
+
+
 def push(cards: list[dict[str, Any]], pushed_path: Path) -> None:
     pushed = read_pushed(pushed_path)
     decks = sorted({card["deck"] for card in cards})
     for deck in decks:
         invoke("createDeck", deck=deck)
+    stored = store_figures(cards)
     for name in FIELDS:
         sync_note_type(name)
     added, updated, skipped, adopted = [], [], [], []
@@ -417,7 +542,7 @@ def push(cards: list[dict[str, Any]], pushed_path: Path) -> None:
     pushed_path.write_text(json.dumps(sorted(pushed)) + "\n")
     print(
         f"{len(decks)} decks: added {len(added)}, updated {len(updated)}, "
-        f"converted {len(adopted)}, moved {moved}"
+        f"converted {len(adopted)}, moved {moved}, stored {stored} figures"
     )
     if adopted:
         print("converted cards changed note type: Anki asks for a one-way sync once")
@@ -462,8 +587,17 @@ def write_apkg(cards: list[dict[str, Any]], out: Path) -> None:
             guid=genanki.guid_for(card["id"]),
         )
         decks[name].add_note(note)
-    genanki.Package(list(decks.values())).write_to_file(str(out))
-    print(f"wrote {out} ({len(decks)} decks, {len(cards)} cards)")
+    figures = all_figures(cards)
+    with tempfile.TemporaryDirectory() as staging:
+        # genanki names each media file after its path, so copies carry the Anki names.
+        media = []
+        for name, path in figures.items():
+            copy = Path(staging) / name
+            copy.write_bytes(path.read_bytes())
+            media.append(str(copy))
+        package = genanki.Package(list(decks.values()), media_files=media)
+        package.write_to_file(str(out))
+    print(f"wrote {out} ({len(decks)} decks, {len(cards)} cards, {len(media)} figures)")
 
 
 def plain(value: str, limit: int) -> str:
@@ -505,6 +639,136 @@ def page_title(cards: list[dict[str, Any]]) -> tuple[str, str]:
     return f"{name} Card Approval", " / ".join(shared)
 
 
+def embed_figures(text: str, figures: dict[str, Path]) -> str:
+    """Put each figure into the text itself, so the page needs no other files."""
+
+    def data_uri(m: re.Match[str]) -> str:
+        path = figures[m[1]]
+        kind = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
+        encoded = base64.b64encode(path.read_bytes()).decode()
+        return f'<img src="data:{kind};base64,{encoded}"'
+
+    return IMG_SRC.sub(data_uri, text)
+
+
+def figure_boxes(pdf: Path, only_page: int | None) -> None:
+    """Print each figure: page, vector or raster, box, caption.
+
+    Parts with the same caption below them merge into one figure.
+    """
+    import pymupdf  # type: ignore  # uv script dep
+
+    doc = pymupdf.open(pdf)
+    pages = [doc[only_page - 1]] if only_page else list(doc)
+    for page in pages:
+        lines = [
+            (pymupdf.Rect(line["bbox"]), "".join(s["text"] for s in line["spans"]))
+            for block in page.get_text("dict")["blocks"]
+            for line in block.get("lines", [])
+        ]
+        captions = [(rect, text) for rect, text in lines if CAPTION.match(text)]
+        labels = [
+            rect
+            for rect, text in lines
+            if len(text.split()) <= LABEL_WORDS and not CAPTION.match(text)
+        ]
+        found = [("vector", rect) for rect in page.cluster_drawings()]
+        found += [
+            ("raster", pymupdf.Rect(info["bbox"])) for info in page.get_image_info()
+        ]
+        figures: list[tuple[str, Any, str]] = []
+        for kind, box in found:
+            grown = True
+            while grown:
+                near = [r for r in labels if r.intersects(box + (-8, -8, 8, 8))]
+                grown = any(not box.contains(r) for r in near)
+                for rect in near:
+                    box |= rect
+            if box.width < 30 or box.height < 30:
+                continue
+            below = [c for c in captions if c[0].y0 >= box.y1 - 5]
+            caption = min(below, key=lambda c: c[0].y0 - box.y1, default=None)
+            text = caption[1] if caption else ""
+            same = next(
+                (i for i, f in enumerate(figures) if text and f[2] == text), None
+            )
+            if same is None:
+                figures.append((kind, box, text))
+            else:
+                old_kind, old_box, _ = figures[same]
+                merged_kind = "raster" if "raster" in (kind, old_kind) else "vector"
+                figures[same] = (merged_kind, old_box | box, text)
+        for kind, box, text in figures:
+            corners = ",".join(str(round(v)) for v in box + (-4, -4, 4, 4))
+            print(f"page {page.number + 1}  {kind}  {corners}  {text}")
+
+
+def text_size(page: Any, box: Any) -> float:
+    """The median letter size in the box; with no text there, on the whole page."""
+    for clip in (box, None):
+        sizes = [
+            span["size"]
+            for block in page.get_text("dict", clip=clip)["blocks"]
+            for line in block.get("lines", [])
+            for span in line["spans"]
+            if span["text"].strip()
+        ]
+        if sizes:
+            return statistics.median(sizes)
+    return 10.0
+
+
+def crop_figure(
+    pdf: Path, page_number: int, corners: str, out: Path, force_png: bool, label_px: int
+) -> None:
+    """Save one box of a PDF page as a figure, with everything outside it removed."""
+    import pymupdf  # type: ignore  # uv script dep
+
+    page = pymupdf.open(pdf)[page_number - 1]
+    box = pymupdf.Rect([float(v) for v in corners.split(",")])
+    scale = label_px / text_size(page, box)
+    whole = page.rect
+    outside = [
+        pymupdf.Rect(whole.x0, whole.y0, whole.x1, box.y0),
+        pymupdf.Rect(whole.x0, box.y1, whole.x1, whole.y1),
+        pymupdf.Rect(whole.x0, box.y0, box.x0, box.y1),
+        pymupdf.Rect(box.x1, box.y0, whole.x1, box.y1),
+    ]
+    raster = any(
+        pymupdf.Rect(info["bbox"]).intersects(box) for info in page.get_image_info()
+    )
+    for rect in outside:
+        if not rect.is_empty:
+            page.add_redact_annot(rect, fill=False)
+    page.apply_redactions(
+        images=pymupdf.PDF_REDACT_IMAGE_PIXELS,
+        graphics=pymupdf.PDF_REDACT_LINE_ART_REMOVE_IF_COVERED,
+    )
+    page.set_cropbox(box)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    preview = Path(tempfile.gettempdir()) / f"{out.stem}-preview.png"
+    if raster or force_png:
+        target = out.with_suffix(".png")
+        zoom = scale * PIXEL_DENSITY
+        page.get_pixmap(matrix=pymupdf.Matrix(zoom, zoom)).save(target)
+        page.get_pixmap(matrix=pymupdf.Matrix(scale, scale)).save(preview)
+    else:
+        target = out.with_suffix(".svg")
+        svg = page.get_svg_image(text_as_path=True)
+        width, height = round(box.width * scale), round(box.height * scale)
+        sized = f'width="{width}" height="{height}"'
+        svg = re.sub(r'width="[^"]*" height="[^"]*"', sized, svg, count=1)
+        target.write_text(svg)
+        pymupdf.open(target)[0].get_pixmap(dpi=72).save(preview)
+    kind = "raster image in the box" if raster else "chosen" if force_png else "vector"
+    shown = f"{round(box.width * scale)}x{round(box.height * scale)}"
+    print(
+        f"wrote {target} ({target.stat().st_size // 1000} KB, {kind}, shown {shown}px)"
+    )
+    print(f"in a card: ![describe it]({target.parent.name}/{target.name})")
+    print(f"look at the preview, at the size the card shows it: {preview}")
+
+
 def write_approval(
     cards: list[dict[str, Any]], pushed: set[str], out: Path, per_day: int, full: bool
 ) -> None:
@@ -518,6 +782,11 @@ def write_approval(
         row = {key: card[key] for key in PAGE_KEYS if key in card}
         if card.get("type") == "cloze":
             row["text"] = CLOZE.sub(r'<span class="cloze">\1</span>', card["text"])
+        for key, value in row.items():
+            if isinstance(value, str):
+                row[key] = embed_figures(value, card["figures"])
+            elif key == "steps":
+                row[key] = [embed_figures(step, card["figures"]) for step in value]
         row |= {
             "subdeck": card["deck"].split("::")[-1],
             "inAnki": "adopt" in card,
@@ -553,15 +822,28 @@ def main() -> None:
     ap.add_argument("--approval-all", action="store_true")
     ap.add_argument("--per-day", type=int, default=4)
     ap.add_argument("--existing", metavar="DECK")
+    ap.add_argument("--figures", metavar="PDF", type=Path)
+    ap.add_argument("--page", type=int)
+    ap.add_argument("--crop", nargs=4, metavar=("PDF", "PAGE", "X0,Y0,X1,Y1", "NAME"))
+    ap.add_argument("--png", action="store_true")
+    ap.add_argument("--label-px", type=int, default=LABEL_PX)
     args = ap.parse_args()
     if args.existing:
         list_existing(args.existing)
         return
+    if args.figures:
+        figure_boxes(args.figures, args.page)
+        return
     if args.cards_dir is None or not args.cards_dir.is_dir():
         sys.exit(f"anki.py: pass the anki/ folder; got {args.cards_dir}")
-    written = load(args.cards_dir)
-    cards, errors = expand_steps(written)
-    errors += validate(cards) + check_evidence(written)
+    if args.crop:
+        pdf, page, corners, name = args.crop
+        out = args.cards_dir / "media" / name
+        crop_figure(Path(pdf), int(page), corners, out, args.png, args.label_px)
+        return
+    written, errors = load(args.cards_dir)
+    cards, step_errors = expand_steps(written)
+    errors += step_errors + validate(cards) + check_evidence(written)
     if errors:
         sys.exit("anki.py: invalid cards:\n" + "\n".join(errors))
     if args.approval or args.approval_all:

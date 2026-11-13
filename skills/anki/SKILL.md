@@ -86,6 +86,25 @@ states overrides the material; record it in the project's convention file (e.g.
 - Code goes in backticks, inline or as a fenced block.
 - Math is MathJax `\(...\)`; the tool rejects a bare `$` outside code.
 - `extra` is an optional footer: never needed to answer. If unsure, omit it.
+- Add a figure when it helps jarl understand the idea. Look for figures in the
+  course notes first.
+- On the front, add a figure only when it helps with the question and does not
+  give away the answer.
+- Talk about every figure the way a good lecturer talks about a slide. Point to
+  what matters in it and say what it shows. Example: "The red curve stays below
+  the blue line between any two of its points. That is what convex means."
+
+<!-- vale STE.PassiveVoice = NO -->
+
+- Ask about the idea, not the picture. "What is this figure called?" only
+  teaches jarl to recognize one picture.
+
+<!-- vale STE.PassiveVoice = YES -->
+
+- Crop the whole figure: every panel, and the text inside it, such as axis
+  names. Leave out the caption; the card text explains the figure instead.
+- Make figures with `--figures` and `--crop`; `--help` has the steps. Look at
+  the preview before you use it.
 - Split a card jarl keeps failing into one-idea cards; keep the original too. A
   card jarl no longer wants: remove its entry and ask jarl to delete the note in
   Anki.

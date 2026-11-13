@@ -70,6 +70,9 @@ input[type=checkbox]{width:17px;height:17px;accent-color:var(--accent);cursor:po
 .part{display:grid;grid-template-columns:74px minmax(0,1fr);gap:4px 12px;align-items:baseline}
 .part>b{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .part .text{min-width:0;overflow-x:auto;overflow-y:hidden;max-width:72ch}
+.part .text img{display:block;max-width:100%;height:auto;margin:8px 0;background:#fff;border-radius:6px;cursor:zoom-in}
+.zoom{position:fixed;inset:0;z-index:1000;cursor:zoom-out;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.6)}
+.zoom img{width:min(90vw,900px);max-height:85vh;object-fit:contain;padding:12px;box-sizing:border-box;background:#fff;border-radius:10px;box-shadow:0 8px 32px rgba(0,0,0,.4)}
 .part.setting .text,.part.extra .text{color:var(--muted);font-size:14px}
 .part.q .text{font-weight:500}
 .part.a .text{background:var(--answer-bg);border-left:2px solid var(--accent);padding:6px 12px}
@@ -401,7 +404,15 @@ window.MathJax = {tex:{inlineMath:[["\\(","\\)"]],displayMath:[["\\[","\\]"]]},s
     changed();
   }
   document.addEventListener("click", function(e){
-    var t = e.target;
+    var t = e.target, open = document.querySelector(".zoom");
+    if (open){ open.remove(); return; }
+    if (t.tagName === "IMG" && t.closest(".part")){
+      var overlay = document.createElement("div");
+      overlay.className = "zoom";
+      overlay.appendChild(t.cloneNode());
+      document.body.appendChild(overlay);
+      return;
+    }
     if (t.dataset && t.dataset.bulk){
       var key = GROUPS[t.dataset.g];
       setDropped(ROWS.filter(function(r){ return r.section === key; }), t.dataset.bulk === "drop");
