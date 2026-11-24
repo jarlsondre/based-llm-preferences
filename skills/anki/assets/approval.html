@@ -173,7 +173,7 @@ window.MathJax = {tex:{inlineMath:[["\\(","\\)"]],displayMath:[["\\[","\\]"]]},s
     var html = '<span class="tag ' + (r.inAnki ? 'old">in Anki' : 'new">new') + '</span>';
     if (r.kind) html += '<span class="tag what">' + esc(r.kind) + '</span>';
     if (r.type === "steps") html += '<span class="tag kind">steps · ' + r.cards + ' cards</span>';
-    if (r.type === "cloze") html += '<span class="tag kind">cloze</span>';
+    if (r.type === "cloze") html += '<span class="tag kind">cloze · ' + r.cards + (r.cards === 1 ? ' card' : ' cards') + '</span>';
     if (HAS_EXAM) html += '<span class="tag ' + r.asked + '">' + ASKED_LABEL[r.asked] + (r.exam ? ': ' + esc(r.exam) : '') + '</span>';
     if (r.where) html += '<span class="where">' + esc(r.where) + '</span>';
     return html;

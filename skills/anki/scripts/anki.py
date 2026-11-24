@@ -218,6 +218,7 @@ LABEL_PX = 16  # as large as the card's Setting and Extra text
 PIXEL_DENSITY = 2  # a PNG figure has two pixels per screen pixel, sharp on phones
 TAGS = re.compile(r"<[^>]+>")
 CLOZE = re.compile(r"\{\{c\d+::(.*?)(?:::[^}]*)?\}\}", re.DOTALL)
+CLOZE_NUMBER = re.compile(r"\{\{c(\d+)::")
 APPROVAL_PAGE = Path(__file__).parent.parent / "assets" / "approval.html"
 PAGE_KEYS = (
     "id",
@@ -856,10 +857,12 @@ def write_approval(
                 row[key] = embed_figures(value, card["figures"])
             elif key == "steps":
                 row[key] = [embed_figures(step, card["figures"]) for step in value]
+        # Anki makes one card per distinct cloze number, so c1, c1, c2 is two cards.
+        numbers = set(CLOZE_NUMBER.findall(card.get("text", "")))
         row |= {
             "subdeck": card["deck"].split("::")[-1],
             "inAnki": "adopt" in card,
-            "cards": len(ids),
+            "cards": len(numbers) if card.get("type") == "cloze" else len(ids),
         }
         rows.append(row)
     if not rows:
