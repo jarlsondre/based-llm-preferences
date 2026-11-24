@@ -466,7 +466,7 @@ Merge into `~/.claude/settings.json`:
         "hooks": [
           {
             "type": "command",
-            "command": "command -v jq >/dev/null || { echo 'hook: jq missing; install a static jq binary into ~/.local/bin (no sudo needed)' >&2; exit 2; }; t=$(jq -r '[.tool_input.url, .tool_input.query, .tool_input.allowed_domains] | tostring'); if printf '%s' \"$t\" | grep -qi 'reddit'; then printf '%s' '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"fetch skill: Reddit blocks the built-in search and fetch. Thread: uv run ~/.claude/skills/fetch/scripts/fetch.py URL. Search: uv run ~/.claude/skills/fetch/scripts/fetch.py \\\"https://www.reddit.com/search.json?q=TERMS\\\"\"}}'; fi"
+            "command": "command -v jq >/dev/null || { echo 'hook: jq missing; install a static jq binary into ~/.local/bin (no sudo needed)' >&2; exit 2; }; t=$(jq -r '[.tool_input.url, .tool_input.query, .tool_input.allowed_domains] | tostring'); if printf '%s' \"$t\" | grep -qi 'reddit'; then printf '%s' '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"fetch skill: Reddit blocks the built-in search and fetch. Thread: uv run ~/.claude/skills/fetch/scripts/fetch.py URL. Search: uv run ~/.claude/skills/fetch/scripts/fetch.py \\\"https://www.reddit.com/search/?q=TERMS\\\"\"}}'; fi"
           }
         ]
       }

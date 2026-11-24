@@ -26,7 +26,7 @@ tool.
 <!-- prettier-ignore -->
 ```
 uv run ${CLAUDE_SKILL_DIR}/scripts/fetch.py URL                                          # the page as text
-uv run ${CLAUDE_SKILL_DIR}/scripts/fetch.py "https://www.reddit.com/search.json?q=TERMS"  # one line per thread
+uv run ${CLAUDE_SKILL_DIR}/scripts/fetch.py "https://www.reddit.com/search/?q=TERMS"     # one line per thread
 uv run ${CLAUDE_SKILL_DIR}/scripts/fetch.py THREAD_URL                                   # one line per comment
 ```
 
@@ -36,7 +36,7 @@ query to limit it. `--limit` caps threads or comments, `--depth` reply levels,
 
 ## Setup and limits
 
-- Once per machine: `uv run --with playwright playwright install firefox`.
+- Once per machine: `uv run ${CLAUDE_SKILL_DIR}/scripts/fetch.py --install`.
 - A login wall needs jarl: `fetch.py --login URL` opens a window, jarl logs in,
   and the profile in `~/.local/share/jarl-fetch` keeps the login. Ask for it in
   For jarl; never enter credentials yourself.

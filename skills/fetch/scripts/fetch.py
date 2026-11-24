@@ -1,24 +1,29 @@
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["playwright"]
+# dependencies = ["playwright==1.65.2"]
+#
+# [tool.uv]
+# exclude-newer = "2026-11-16T00:00:00Z"
 # ///
 """Fetch a page the built-in fetch cannot get (login wall, bot block) and print it as text.
 
 Usage: uv run ~/.claude/skills/fetch/scripts/fetch.py URL [--max-chars N] [--depth N] [--limit N]
        uv run ~/.claude/skills/fetch/scripts/fetch.py --login URL   # opens a window; log in, then press Enter
+       uv run ~/.claude/skills/fetch/scripts/fetch.py --install     # once per machine: the matching Firefox
 
 The page loads in headless Firefox. The profile in ~/.local/share/jarl-fetch
 keeps logins: one --login per site per machine. A Reddit thread prints as one
-line per comment, a Reddit search (https://www.reddit.com/search.json?q=TERMS)
+line per comment, a Reddit search (https://www.reddit.com/search/?q=TERMS)
 as one line per thread, other pages as their visible text. --depth (reply
-levels) and --limit (comments or threads fetched) apply to Reddit only. Once
-per machine: uv run --with playwright playwright install firefox
+levels) and --limit (comments or threads fetched) apply to Reddit only.
 """
 
 import argparse
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any
+from urllib.parse import parse_qs, urlencode, urlsplit
 
 from playwright.sync_api import (  # type: ignore  # uv script dep
     BrowserContext,
@@ -64,22 +69,51 @@ def reddit_text(ctx: BrowserContext, url: str, depth: int, limit: int) -> str:
     return "\n".join(lines)
 
 
+SEARCH_ROWS = """units => units.map(u => {
+  const link = u.querySelector("a[href*='/comments/']");
+  const title = u.querySelector("[data-testid='post-title-text']");
+  const sub = [...u.querySelectorAll("a[href^='/r/']")]
+    .find(a => !a.getAttribute("href").includes("/comments/"));
+  const counts = u.querySelector("[data-testid='search-counter-row']");
+  return {
+    url: link ? link.href.split("?")[0] : "",
+    title: title ? title.innerText : (link ? link.getAttribute("aria-label") || "" : ""),
+    sub: sub ? sub.getAttribute("href").replace(/^\\/|\\/$/g, "") : "?",
+    counts: counts ? counts.innerText.replace(/\\s+/g, " ") : "",
+  };
+})"""
+
+
 def reddit_search_text(ctx: BrowserContext, url: str, limit: int) -> str:
-    """One line per thread: score, comment count, subreddit, title, URL."""
-    sep = "&" if "?" in url else "?"
-    api = url + f"{sep}limit={limit}&raw_json=1"
-    resp = ctx.request.get(api)
-    if not resp.ok:
-        sys.exit(f"fetch.py: reddit returned {resp.status} for {api}")
-    lines = []
-    for child in resp.json()["data"]["children"]:
-        if child["kind"] != "t3":
-            continue
-        d = child["data"]
-        lines.append(
-            f"[{d.get('score', 0)}] {d.get('num_comments', 0)} comments r/{d.get('subreddit', '?')}: "
-            f"{d.get('title', '')}  https://www.reddit.com{d.get('permalink', '')}"
-        )
+    """One line per thread: votes, comments, subreddit, title, URL.
+
+    Reddit blocks search.json (403 as of November 2026), so this reads the HTML
+    search page, scrolling until it holds `limit` threads or stops growing.
+    """
+    parts = urlsplit(url)
+    params = {k: v[0] for k, v in parse_qs(parts.query).items()}
+    keep = {k: params[k] for k in ("q", "sort", "t") if k in params}
+    path = parts.path.removesuffix(".json").rstrip("/") + "/"
+    page_url = f"https://www.reddit.com{path}?" + urlencode({"type": "posts", **keep})
+    page = ctx.new_page()
+    resp = page.goto(page_url, wait_until="domcontentloaded", timeout=60000)
+    if resp is not None and not resp.ok:
+        sys.exit(f"fetch.py: reddit returned {resp.status} for {page_url}")
+    selector = "[data-testid='sdui-post-unit']"
+    page.wait_for_timeout(2500)
+    count = 0
+    while count < limit:
+        page.mouse.wheel(0, 20000)
+        page.wait_for_timeout(1500)
+        grown = len(page.query_selector_all(selector))
+        if grown == count:
+            break
+        count = grown
+    rows = page.eval_on_selector_all(selector, SEARCH_ROWS)[:limit]
+    page.close()
+    lines = [
+        f"[{r['counts']}] {r['sub']}: {r['title']}  {r['url']}" for r in rows if r["url"]
+    ]
     return "\n".join(lines) if lines else "fetch.py: no threads found"
 
 
@@ -96,12 +130,21 @@ def main() -> None:
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    ap.add_argument("url")
+    ap.add_argument("url", nargs="?")
     ap.add_argument("--login", action="store_true")
+    ap.add_argument("--install", action="store_true")
     ap.add_argument("--max-chars", type=int, default=30000)
     ap.add_argument("--depth", type=int, default=3)
     ap.add_argument("--limit", type=int, default=100)
     args = ap.parse_args()
+    if args.install:
+        sys.exit(
+            subprocess.run(
+                [sys.executable, "-m", "playwright", "install", "firefox"], check=False
+            ).returncode
+        )
+    if not args.url:
+        ap.error("give a URL, or --install")
     with sync_playwright() as pw:
         try:
             ctx = pw.firefox.launch_persistent_context(
@@ -110,7 +153,7 @@ def main() -> None:
         except Exception as exc:  # noqa: BLE001  # any launch failure gets the install hint
             sys.exit(
                 "fetch.py: Firefox did not start. Once per machine: "
-                "uv run --with playwright playwright install firefox\n"
+                "uv run ~/.claude/skills/fetch/scripts/fetch.py --install\n"
                 f"({str(exc).strip().splitlines()[0]})"
             )
         if args.login:
